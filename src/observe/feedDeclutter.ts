@@ -30,26 +30,26 @@ export const REELS_HIDDEN_CLASS = 'fb-sec-reels-hidden';
 export const DECLUTTER_HIDDEN_CLASS = 'fb-sec-declutter-hidden';
 
 export const SPONSORED_CSS = `
-/* Sponsored Ads (Language-Agnostic) */
-div[data-pagelet^="FeedUnit_"]:has(a[href*="/ads/about/"]),
+/* Sponsored Ads (Facebook Comet) — Language-Agnostic Core Signals */
+div[data-pagelet^="FeedUnit_"]:has(a[href*="/ads/about"]),
 div[data-pagelet^="FeedUnit_"]:has(a[href*="/about/ads"]),
+div[data-pagelet^="FeedUnit_"]:has(a[href*="/ad_preferences"]),
+div[data-pagelet^="FeedUnit_"]:has(a[href*="facebook.com/ads/about"]),
+div[data-pagelet^="FeedUnit_"]:has(a[href*="ad_id="]),
 div[data-pagelet^="FeedUnit_"]:has(article[data-ft*="sponsored_ad"]),
+div[data-pagelet^="FeedUnit_"]:has([data-ft*='"ei":"sponsored_ad"']),
 div[data-pagelet^="FeedUnit_"]:has(.sponsored_ad),
-div[data-pagelet^="FeedUnit_"]:has([data-ad-rendering-role^="cta"]),
 div[data-pagelet^="FeedUnit_"]:has(a[href*="#?abf"]),
-div[data-pagelet^="FeedUnit_"]:has(div[data-0][data-1][data-2]),
 
-div[data-virtualized="false"]:has(a[href*="/ads/about/"]),
-div[data-virtualized="false"]:has(a[href*="/about/ads"]),
-div[data-virtualized="false"]:has(article[data-ft*="sponsored_ad"]),
-div[data-virtualized="false"]:has(.sponsored_ad),
-div[data-virtualized="false"]:has([data-ad-rendering-role^="cta"]),
-div[data-virtualized="false"]:has(a[href*="#?abf"]),
-div[data-virtualized="false"]:has(div[data-0][data-1][data-2]),
+/* Right Rail Sponsored Ads — Language-Agnostic */
+div[data-pagelet="RightRail"]:has(a[href*="ad_id="]),
+div[data-pagelet="RightRail"]:has(a[href*="/ads/about"]),
+div[data-pagelet="RightRail"]:has(a[href*="/about/ads"]),
+div[data-pagelet="RightRail"]:has(a[href*="/ad_preferences"]),
 
-/* Instagram Sponsored */
+/* Instagram Sponsored — Language-Agnostic */
 article:has(a[href*="/ads/about/"]),
-article:has(a[href*="/about/ads"]),
+article:has(a[href*="/about/ads/"]),
 article:has(a[href*="paid_partnership"]),
 
 .${SPONSORED_HIDDEN_CLASS} {
@@ -64,11 +64,9 @@ article:has(a[href*="paid_partnership"]),
 `;
 
 export const SUGGESTED_CSS = `
-/* Suggested Posts — unfollowed pages/creators */
+/* Suggested Posts — unfollowed pages/creators (Facebook Comet) */
 div[data-pagelet^="FeedUnit_"]:has([data-ad-rendering-role="profile_name"] h4 [role="button"]),
 div[data-pagelet^="FeedUnit_"]:has([data-ad-rendering-role="profile_name"] h4 button),
-div[data-virtualized="false"]:has([data-ad-rendering-role="profile_name"] h4 [role="button"]),
-div[data-virtualized="false"]:has([data-ad-rendering-role="profile_name"] h4 button),
 
 /* Instagram Suggested */
 article:has(a[href*="suggested"]),
@@ -86,15 +84,11 @@ div[data-testid*="suggested"],
 `;
 
 export const REELS_CSS = `
-/* Reels / Short Video trays */
+/* Reels / Short Video trays (Facebook Comet) */
 div[data-pagelet^="FeedUnit_"]:has(a[href*="/reel/"]),
 div[data-pagelet^="FeedUnit_"]:has(a[href*="/reels/"]),
 div[data-pagelet^="FeedUnit_"]:has([data-pagelet*="Reels"]),
 div[data-pagelet^="FeedUnit_"]:has([data-pagelet*="ShortVideos"]),
-div[data-virtualized="false"]:has(a[href*="/reel/"]),
-div[data-virtualized="false"]:has(a[href*="/reels/"]),
-div[data-virtualized="false"]:has([data-pagelet*="Reels"]),
-div[data-virtualized="false"]:has([data-pagelet*="ShortVideos"]),
 
 /* Instagram Reels */
 article:has(a[href^="/reel/"]),
@@ -113,10 +107,6 @@ div:has(> a[href^="/reels/"]),
 `;
 
 // Provides CSS backing for the DECLUTTER_HIDDEN_CLASS marker added by sweepFeed.
-// Deliberately does NOT include SPONSORED_CSS or SUGGESTED_CSS selectors — those
-// are injected via their own dedicated stylesheets so they can be toggled
-// independently. Mixing them here caused both to activate whenever either
-// mode was enabled.
 const DECLUTTER_CLASS_CSS = `
 .${DECLUTTER_HIDDEN_CLASS} {
   display: none !important;
@@ -130,52 +120,100 @@ const DECLUTTER_CLASS_CSS = `
 `;
 
 /**
+ * Checks whether an element is an outer feed container.
+ * Feed containers must NEVER be hidden, even if their subtree contains sponsored posts.
+ */
+export function isFeedContainer(element: Element): boolean {
+  if (!element || typeof element.getAttribute !== 'function') {
+    return false;
+  }
+  const role = element.getAttribute('role');
+  if (role === 'feed' || role === 'main') {
+    return true;
+  }
+  if (element.getAttribute('data-virtualized') !== null) {
+    return true;
+  }
+  if (element.getAttribute('data-pagelet') === 'Feed') {
+    return true;
+  }
+  if (element.querySelectorAll('div[data-pagelet^="FeedUnit_"]').length > 1) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Checks whether a feed unit element is a sponsored advertisement.
  * Completely language-independent.
  */
+// Multi-language WCAG sponsored accessibility keywords
+// Supported: en (Sponsored), vi (Được tài trợ), fr (Sponsorisé), es/pt (Patrocinado, Publicidad),
+// de (Gesponsert), it (Sponsorizzato), ru (Реклама), ja (広告), ko (광고, 스폰서), zh (贊助, 赞助),
+// ar (مُموَّل), th (ได้รับการสนับสนุน), id (Bersponsor), nl (Gesponsord), pl (Sponsorowane), tr (Sponsorlu), hi (प्रायोजित)
+const MULTI_LANG_SPONSORED_REGEX = /(?:^|\s|\b|[\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af])(?:sponsored|được tài trợ|nội dung được tài trợ|nhà quảng cáo|advertiser|sponsorisé|patrocinado|publicidad|gesponsert|sponsorizzato|sponsorlu|bersponsor|sponsorowane|gesponsord|sponsrad|реклама|مُموَّل|贊助|赞助|広告|광고|스폰서|ได้รับการสนับสนุน|प्रायोजित)(?:$|\s|\b|[\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af])/i;
+
+// Multi-language recommendation labels in feed metadata
+const MULTI_LANG_SUGGESTED_REGEX = /(?:gợi ý cho bạn|suggested for you|recommandé|suggestions pour vous|sugerencias para ti|sugestões para você|vorschläge für dich|consigliato|recomendado|おすすめ|为你推荐|為你推薦|추천|рекомендуемое|ditampilkan untuk anda|önerilen|podpowiadane)/i;
+
+/**
+ * Checks whether a feed unit element is a sponsored advertisement.
+ * Primary detection is completely language-independent (Meta URLs and protocol markers),
+ * with multi-language accessibility label fallbacks.
+ */
 export function isSponsoredPost(element: Element): boolean {
-  // 1. Legal transparency links
-  const adAboutLink = element.querySelector('a[href*="/ads/about/"], a[href*="/about/ads"]');
+  if (isFeedContainer(element)) {
+    return false;
+  }
+
+  // 1. Legal transparency links for Meta Ads (100% language-agnostic worldwide)
+  const adAboutLink = element.querySelector(
+    'a[href*="/ads/about"], a[href*="facebook.com/ads/about"], a[href*="/about/ads"], a[href*="/ad_preferences"], a[href*="instagram.com/about/ads"]',
+  );
   if (adAboutLink) {
     return true;
   }
 
-  // 2. Backend data-ft JSON marker
-  const articleAd = element.querySelector('article[data-ft*="sponsored_ad"]');
-  if (articleAd) {
-    return true;
-  }
-  if (element.matches('article[data-ft*="sponsored_ad"]')) {
+  // 2. Outbound advertising clickthrough tracking query parameter (100% language-agnostic)
+  const adTrackingLink = element.querySelector('a[href*="ad_id="]');
+  if (adTrackingLink) {
     return true;
   }
 
-  // 3. Internal sponsored_ad CSS class
+  // 3. Backend data-ft JSON marker (100% language-agnostic)
+  const articleAd = element.querySelector('[data-ft*="sponsored_ad"]');
+  if (articleAd || element.matches('[data-ft*="sponsored_ad"]')) {
+    return true;
+  }
+
+  // 4. Internal sponsored_ad CSS class (100% language-agnostic)
   const classAd = element.querySelector('.sponsored_ad');
-  if (classAd) {
-    return true;
-  }
-  if (element.classList.contains('sponsored_ad')) {
+  if (classAd || element.classList.contains('sponsored_ad')) {
     return true;
   }
 
-  // 4. Call-to-action rendering role (cta-* values are ad-exclusive).
-  //    NOTE: do NOT broaden to [data-ad-rendering-role] without a value filter —
-  //    profile_name and story_message appear on organic posts too.
-  const ctaButton = element.querySelector('[data-ad-rendering-role^="cta"]');
-  if (ctaButton) {
-    return true;
-  }
-
-  // 5. Obfuscated SVG Sponsored label with internal hash anchor
+  // 5. Obfuscated SVG Sponsored label with internal hash anchor (100% language-agnostic)
   const sponsoredHashLink = element.querySelector('a[href*="#?abf"]');
   if (sponsoredHashLink) {
     return true;
   }
 
-  // 6. Decoy anti-adblock nodes with indexed data attributes
-  const decoyNode = element.querySelector('div[data-0][data-1][data-2]');
-  if (decoyNode) {
+  // 6. Instagram Paid Partnership links (100% language-agnostic)
+  const paidPartnership = element.querySelector('a[href*="paid_partnership"]');
+  if (paidPartnership) {
     return true;
+  }
+
+  // 7. Multi-language accessibility labels for sponsored content (mandated by WCAG / Meta UI)
+  const ariaElements = element.querySelectorAll('[aria-label]');
+  for (let i = 0; i < ariaElements.length; i += 1) {
+    const el = ariaElements[i];
+    if (el) {
+      const label = el.getAttribute('aria-label');
+      if (label && MULTI_LANG_SPONSORED_REGEX.test(label)) {
+        return true;
+      }
+    }
   }
 
   return false;
@@ -187,20 +225,22 @@ export function isSponsoredPost(element: Element): boolean {
  * Two types of suggested posts exist on Facebook Comet:
  *
  * Type 1 — Unfollowed page: a Follow/Subscribe button appears inside the
- *   profile_name h4 header next to the page name.
+ *   profile_name h4 header next to the page name. (100% language-agnostic)
  *
  * Type 2 — Algorithm recommendation: Facebook places "Gợi ý cho bạn" /
- *   "Suggested for you" text in the metadata row directly below the page name.
- *   This type may appear even for pages the user follows or has liked.
- *   CSS selectors cannot match text content, so this is JS-only detection.
+ *   "Suggested for you" (or localized equivalent) in the metadata row.
  */
 export function isSuggestedPost(element: Element): boolean {
+  if (isFeedContainer(element)) {
+    return false;
+  }
+
   // If this feed unit is a Reels or short video tray, it is handled under the Reels category
   if (isReelsPost(element)) {
     return false;
   }
 
-  // 1. Type 1: Unfollowed page with Follow/Subscribe button in profile header h4
+  // 1. Type 1: Unfollowed page with Follow/Subscribe button in profile header h4 (language-agnostic)
   const profileHeader = element.querySelector('[data-ad-rendering-role="profile_name"] h4');
   if (profileHeader) {
     const followAction = profileHeader.querySelector('[role="button"], button');
@@ -209,15 +249,13 @@ export function isSuggestedPost(element: Element): boolean {
     }
   }
 
-  // 2. Type 2: "Gợi ý cho bạn" / "Suggested for you" label in the metadata row.
-  //    The metadata row is the next sibling of the profile_name container
-  //    (profile_name sits in a span inside a row div; the metadata row is adjacent).
+  // 2. Type 2: Multi-language recommendation label in the metadata row
   const profileNameEl = element.querySelector('[data-ad-rendering-role="profile_name"]');
   if (profileNameEl) {
     const metadataRow = profileNameEl.parentElement?.parentElement?.nextElementSibling;
     if (metadataRow) {
       const metaText = metadataRow.textContent ?? '';
-      if (metaText.includes('Gợi ý cho bạn') || metaText.includes('Suggested for you')) {
+      if (MULTI_LANG_SUGGESTED_REGEX.test(metaText)) {
         return true;
       }
     }
@@ -230,6 +268,10 @@ export function isSuggestedPost(element: Element): boolean {
  * Checks whether a feed unit element is a Reels or short video tray / post.
  */
 export function isReelsPost(element: Element): boolean {
+  if (isFeedContainer(element)) {
+    return false;
+  }
+
   const reelLink = element.querySelector('a[href*="/reel/"], a[href*="/reels/"]');
   if (reelLink) {
     return true;
@@ -362,11 +404,19 @@ function sweepFeed(
   }
 
   const feedUnits = doc.querySelectorAll(
-    'div[data-pagelet^="FeedUnit_"], div[data-virtualized="false"], article',
+    'div[data-pagelet^="FeedUnit_"], div[role="feed"] > div, div[data-pagelet="RightRail"], article',
   );
   for (let i = 0; i < feedUnits.length; i += 1) {
     const unit = feedUnits[i];
     if (unit) {
+      if (isFeedContainer(unit)) {
+        continue;
+      }
+      // Guard against intermediate feed wrappers that contain multiple feed units
+      if (unit.querySelectorAll('div[data-pagelet^="FeedUnit_"]').length > 0 && !unit.getAttribute('data-pagelet')?.startsWith('FeedUnit_')) {
+        continue;
+      }
+
       const isSponsored = isSponsoredPost(unit);
       const isSuggested = isSuggestedPost(unit);
       const isReels = isReelsPost(unit);

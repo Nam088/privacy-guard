@@ -144,6 +144,9 @@ describe('buildSuppressionConfig', () => {
         'instagram.bypassLinkShim': false,
         'instagram.hideSuggestedPosts': false,
         'instagram.hideReels': false,
+        'instagram.hideOnlineStatus': false,
+        'instagram.hideSponsoredPosts': false,
+        'instagram.protectWebRtcIp': false,
         'facebook.hideReadReceipts': true,
         'facebook.hideTyping': true,
         'facebook.hideStoryViews': true,
@@ -255,7 +258,11 @@ describe('buildSuppressionConfig', () => {
   it('grants hideSponsoredPosts on facebook when enabled', () => {
     const withSponsored: Settings = {
       ...DEFAULT_SETTINGS,
-      features: { ...DEFAULT_SETTINGS.features, 'facebook.hideSponsoredPosts': true },
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.hideSponsoredPosts': true,
+        'instagram.hideSponsoredPosts': false,
+      },
     };
     expect(buildSuppressionConfig('https://www.facebook.com/', withSponsored).hideSponsoredPosts).toBe(
       true,

@@ -62,6 +62,15 @@ export class FacebookTypingRule implements SuppressionRule, HttpSuppressionRule 
       if (bytes) {
         try {
           const text = new TextDecoder('utf-8').decode(bytes);
+          // Never drop frames carrying outbound user message bodies or send actions
+          const isOutboundMessage =
+            /["\\](?:body|text|send_message|message_send|composer_send_message|offline_threading_id|message_id)["\\]/i.test(
+              text,
+            );
+          if (isOutboundMessage) {
+            return null;
+          }
+
           if (
             text.includes('send_typing_indicators') ||
             text.includes('send_typing_indicators_SECURE_MESSAGE_OVER_WA_ONE_TO_ONE') ||
@@ -149,42 +158,162 @@ export class FacebookTypingRule implements SuppressionRule, HttpSuppressionRule 
    * Evaluates messages dispatched to Armadillo Web Worker / SharedWorker (via postMessage).
    */
   evaluateWorker(data: unknown): 'pass' | 'drop' {
-    if (!data) {
+    if (!data || typeof data !== 'object') {
       return 'pass';
     }
-    let text: string;
-    if (typeof data === 'string') {
-      text = data;
+
+    // Explicit safeguard: Never drop outbound message operations or payloads carrying user text
+    if (isOutboundMessagePayload(data)) {
+      return 'pass';
+    }
+
+    const actionCandidates: string[] = [];
+    let stateCandidate: unknown = undefined;
+
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        if (typeof item === 'string') {
+          actionCandidates.push(item);
+        } else if (item && typeof item === 'object') {
+          const extracted = extractStateValue(item);
+          if (extracted !== undefined && stateCandidate === undefined) {
+            stateCandidate = extracted;
+          }
+        }
+      }
     } else {
-      try {
-        text = JSON.stringify(data);
-      } catch {
-        text = String(data);
+      const rec = data as Record<string, unknown>;
+      const keys = [
+        rec.action,
+        rec.type,
+        rec.name,
+        rec.event,
+        rec.event_name,
+        rec.command,
+        rec.actionType,
+      ];
+      for (const k of keys) {
+        if (typeof k === 'string') {
+          actionCandidates.push(k);
+        }
       }
-    }
-    const lower = text.toLowerCase();
-
-    const matchesAction = FACEBOOK_SIGNATURES.typingWorkerActions.some((action) =>
-      lower.includes(action.toLowerCase()),
-    );
-    if (!matchesAction) {
-      return 'pass';
+      stateCandidate = extractStateValue(rec);
     }
 
-    // Preserve stop states (e.g. idle, paused) so user is not stuck in typing indicator
-    if (typeof data === 'object' && data !== null) {
-      const obj = data as Record<string, unknown>;
-      const state =
-        obj.state ??
-        (Array.isArray(obj.args) ? (obj.args[0] as Record<string, unknown>)?.state : undefined);
+    for (const candidate of actionCandidates) {
+      const lowered = candidate.toLowerCase();
       if (
-        typeof state === 'string' &&
-        FACEBOOK_SIGNATURES.typingStopStates.some((stop) => state.toLowerCase().includes(stop))
+        FACEBOOK_SIGNATURES.typingWorkerActions.some(
+          (action) => lowered === action.toLowerCase(),
+        )
       ) {
-        return 'pass';
+        // Preserve stop states (e.g. idle, paused, stopped) so user is not stuck in typing indicator
+        if (
+          typeof stateCandidate === 'string' &&
+          FACEBOOK_SIGNATURES.typingStopStates.some((stop) =>
+            stateCandidate.toLowerCase().includes(stop),
+          )
+        ) {
+          return 'pass';
+        }
+        if (
+          typeof stateCandidate === 'number' &&
+          (stateCandidate === 0 || stateCandidate === 2)
+        ) {
+          return 'pass';
+        }
+        return 'drop';
       }
     }
 
-    return 'drop';
+    return 'pass';
   }
+}
+
+function extractStateValue(data: unknown): unknown {
+  if (!data || typeof data !== 'object') {
+    return undefined;
+  }
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const val = extractStateValue(item);
+      if (val !== undefined) {
+        return val;
+      }
+    }
+    return undefined;
+  }
+  const obj = data as Record<string, unknown>;
+  if (obj.state !== undefined) {
+    return obj.state;
+  }
+  if (obj.args !== undefined) {
+    return extractStateValue(obj.args);
+  }
+  return undefined;
+}
+
+function isOutboundMessagePayload(data: unknown): boolean {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      if (typeof item === 'string') {
+        const lower = item.toLowerCase();
+        if (
+          lower === 'sendmessage' ||
+          lower === 'sendtextmessage' ||
+          lower === 'sendmediamessage' ||
+          lower.includes('sendmessage') ||
+          lower.includes('send_message')
+        ) {
+          return true;
+        }
+      } else if (item && typeof item === 'object') {
+        if (isOutboundMessagePayload(item)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  const rec = data as Record<string, unknown>;
+  if (
+    rec.body !== undefined ||
+    rec.text !== undefined ||
+    rec.message !== undefined ||
+    rec.offline_threading_id !== undefined ||
+    rec.message_id !== undefined ||
+    rec.client_context !== undefined
+  ) {
+    return true;
+  }
+
+  const keys = [
+    rec.action,
+    rec.type,
+    rec.name,
+    rec.event,
+    rec.event_name,
+    rec.command,
+    rec.actionType,
+  ];
+  for (const k of keys) {
+    if (typeof k === 'string') {
+      const lower = k.toLowerCase();
+      if (
+        lower === 'sendmessage' ||
+        lower === 'sendtextmessage' ||
+        lower === 'sendmediamessage' ||
+        lower.includes('sendmessage') ||
+        lower.includes('send_message')
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }

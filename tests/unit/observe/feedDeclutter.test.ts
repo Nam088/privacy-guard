@@ -122,14 +122,14 @@ describe('feedDeclutter', () => {
       expect(isFeedUnitUnwanted(unit)).toBe(true);
     });
 
-    it('detects sponsored ads via Call-To-Action rendering role', () => {
+    it('detects sponsored ads via outbound ad tracking links', () => {
       const unit = document.createElement('div');
       unit.setAttribute('data-pagelet', 'FeedUnit_3');
       unit.innerHTML = `
         <article>
-          <div data-ad-rendering-role="cta-button">
-            <button>Sign Up</button>
-          </div>
+          <a href="https://l.facebook.com/l.php?u=https%3A%2F%2Fexample.com&ad_id=1202386089">
+            Learn More
+          </a>
         </article>
       `;
 
@@ -138,7 +138,7 @@ describe('feedDeclutter', () => {
 
     it('detects sponsored ads via obfuscated SVG link with #?abf hash anchor', () => {
       const unit = document.createElement('div');
-      unit.setAttribute('data-virtualized', 'false');
+      unit.setAttribute('data-pagelet', 'FeedUnit_4');
       unit.innerHTML = `
         <article>
           <a href="?__cft__[0]=AZ123&__tn__=%2CO%2CP-R#?abf" role="link">
@@ -151,16 +151,60 @@ describe('feedDeclutter', () => {
       expect(isFeedUnitUnwanted(unit)).toBe(true);
     });
 
-    it('detects sponsored ads via anti-adblock decoy node clusters', () => {
-      const unit = document.createElement('div');
-      unit.setAttribute('data-virtualized', 'false');
+    it('detects sponsored ads via localized accessibility labels across international languages', () => {
+      // Vietnamese
+      const unitVi = document.createElement('div');
+      unitVi.setAttribute('data-pagelet', 'FeedUnit_5');
+      unitVi.innerHTML = '<div aria-label="Mở menu cho nội dung được tài trợ của Brand"></div>';
+      expect(isSponsoredPost(unitVi)).toBe(true);
+
+      // English
+      const unitEn = document.createElement('div');
+      unitEn.setAttribute('data-pagelet', 'FeedUnit_6');
+      unitEn.innerHTML = '<div aria-label="Sponsored post"></div>';
+      expect(isSponsoredPost(unitEn)).toBe(true);
+
+      // Japanese
+      const unitJa = document.createElement('div');
+      unitJa.setAttribute('data-pagelet', 'FeedUnit_7');
+      unitJa.innerHTML = '<div aria-label="広告"></div>';
+      expect(isSponsoredPost(unitJa)).toBe(true);
+
+      // French
+      const unitFr = document.createElement('div');
+      unitFr.setAttribute('data-pagelet', 'FeedUnit_8');
+      unitFr.innerHTML = '<div aria-label="Contenu sponsorisé"></div>';
+      expect(isSponsoredPost(unitFr)).toBe(true);
+
+      // Spanish
+      const unitEs = document.createElement('div');
+      unitEs.setAttribute('data-pagelet', 'FeedUnit_9');
+      unitEs.innerHTML = '<div aria-label="Publicidad"></div>';
+      expect(isSponsoredPost(unitEs)).toBe(true);
+
+      // German
+      const unitDe = document.createElement('div');
+      unitDe.setAttribute('data-pagelet', 'FeedUnit_10');
+      unitDe.innerHTML = '<div aria-label="Gesponsert"></div>';
+      expect(isSponsoredPost(unitDe)).toBe(true);
+
+      // Chinese
+      const unitZh = document.createElement('div');
+      unitZh.setAttribute('data-pagelet', 'FeedUnit_11');
+      unitZh.innerHTML = '<div aria-label="贊助內容"></div>';
+      expect(isSponsoredPost(unitZh)).toBe(true);
+    });
+
+    it('detects Instagram sponsored ads via paid partnership and transparency links', () => {
+      const unit = document.createElement('article');
       unit.innerHTML = `
-        <div aria-hidden="true" data-0="0" data-1="1" data-2="2" data-19="19">
-          <blockquote><span>Facebook</span></blockquote>
+        <div>
+          <a href="/about/ads/">Sponsored</a>
+          <a href="https://www.instagram.com/explore/locations/paid_partnership/">Paid partnership</a>
         </div>
-        <div>Ad creative</div>
       `;
 
+      expect(isSponsoredPost(unit)).toBe(true);
       expect(isFeedUnitUnwanted(unit)).toBe(true);
     });
 
@@ -380,21 +424,51 @@ describe('feedDeclutter', () => {
       cleanup();
     });
 
-    it('applies hidden class to virtualized feed units with sponsored links', async () => {
+    it('applies hidden class to feed units with sponsored links', async () => {
       const cleanup = installFeedDeclutterHook(window, () => true);
 
-      const virtualizedUnit = document.createElement('div');
-      virtualizedUnit.setAttribute('data-virtualized', 'false');
-      virtualizedUnit.innerHTML = `
+      const feedUnit = document.createElement('div');
+      feedUnit.setAttribute('data-pagelet', 'FeedUnit_4');
+      feedUnit.innerHTML = `
         <article>
           <a href="?__cft__[0]=AZ999#?abf">Sponsored</a>
         </article>
       `;
-      container.appendChild(virtualizedUnit);
+      container.appendChild(feedUnit);
 
       await new Promise((resolve) => setTimeout(resolve, 30));
 
-      expect(virtualizedUnit.classList.contains(DECLUTTER_HIDDEN_CLASS)).toBe(true);
+      expect(feedUnit.classList.contains(DECLUTTER_HIDDEN_CLASS)).toBe(true);
+
+      cleanup();
+    });
+
+    it('never hides the feed container even when it wraps sponsored posts', async () => {
+      const cleanup = installFeedDeclutterHook(window, () => true);
+
+      const feedContainer = document.createElement('div');
+      feedContainer.setAttribute('role', 'feed');
+      feedContainer.setAttribute('data-virtualized', 'false');
+
+      const adUnit = document.createElement('div');
+      adUnit.setAttribute('data-pagelet', 'FeedUnit_0');
+      adUnit.innerHTML = '<a href="/ads/about">Sponsored Ad</a>';
+
+      const normalUnit = document.createElement('div');
+      normalUnit.setAttribute('data-pagelet', 'FeedUnit_1');
+      normalUnit.innerHTML = '<div>Normal friend post</div>';
+
+      feedContainer.appendChild(adUnit);
+      feedContainer.appendChild(normalUnit);
+      container.appendChild(feedContainer);
+
+      await new Promise((resolve) => setTimeout(resolve, 30));
+
+      // Container and normal post MUST NOT be hidden
+      expect(feedContainer.classList.contains(DECLUTTER_HIDDEN_CLASS)).toBe(false);
+      expect(normalUnit.classList.contains(DECLUTTER_HIDDEN_CLASS)).toBe(false);
+      // Only the ad unit should be hidden
+      expect(adUnit.classList.contains(DECLUTTER_HIDDEN_CLASS)).toBe(true);
 
       cleanup();
     });
@@ -417,6 +491,31 @@ describe('feedDeclutter', () => {
       `;
       expect(isSponsoredPost(suggested)).toBe(false);
       expect(isSuggestedPost(suggested)).toBe(true);
+
+      // Algorithmic recommendation across languages in metadata row
+      const makeSuggestedAlg = (text: string) => {
+        const el = document.createElement('div');
+        el.innerHTML = `
+          <div>
+            <div>
+              <span>
+                <div data-ad-rendering-role="profile_name"><h4><span>Page</span></h4></div>
+              </span>
+            </div>
+            <div>
+              <span>${text}</span>
+            </div>
+          </div>
+        `;
+        return el;
+      };
+
+      expect(isSuggestedPost(makeSuggestedAlg('Gợi ý cho bạn · 2 giờ'))).toBe(true);
+      expect(isSuggestedPost(makeSuggestedAlg('Suggested for you · 2h'))).toBe(true);
+      expect(isSuggestedPost(makeSuggestedAlg('Recommandé pour vous · 1 h'))).toBe(true);
+      expect(isSuggestedPost(makeSuggestedAlg('Sugerencias para ti · 3 h'))).toBe(true);
+      expect(isSuggestedPost(makeSuggestedAlg('おすすめの投稿'))).toBe(true);
+      expect(isSuggestedPost(makeSuggestedAlg('为你推荐'))).toBe(true);
     });
 
     it('hides only sponsored posts when only isSponsoredActive is on', async () => {

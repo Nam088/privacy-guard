@@ -108,6 +108,18 @@ export const vi: TranslationDictionary = {
       label: 'Ẩn Reels và video ngắn',
       description: 'Ẩn hoàn toàn khay Reels và clip ngắn trên bảng tin Instagram',
     },
+    'instagram.hideOnlineStatus': {
+      label: 'Chế độ tàng hình (Ẩn chấm xanh)',
+      description: 'Lướt Instagram Direct hoàn toàn ẩn danh không bao giờ hiện chấm xanh hoạt động',
+    },
+    'instagram.hideSponsoredPosts': {
+      label: 'Ẩn bài viết được tài trợ & quảng cáo',
+      description: 'Ẩn các bài viết quảng cáo và tài trợ trên bảng tin Instagram của bạn',
+    },
+    'instagram.protectWebRtcIp': {
+      label: 'Chống rò rỉ IP qua WebRTC',
+      description: 'Ngăn chặn lộ địa chỉ IP thật của bạn trong các cuộc gọi Instagram Direct',
+    },
     'global.stripFbclid': {
       label: 'Xóa mã theo dõi fbclid',
       description: 'Gỡ bỏ tham số định danh theo dõi fbclid khỏi các liên kết bạn bấm vào',

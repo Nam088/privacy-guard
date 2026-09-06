@@ -108,6 +108,18 @@ export const en: TranslationDictionary = {
       label: 'Hide Reels & short videos',
       description: 'Hide Reels shelves and video carousels in your feed',
     },
+    'instagram.hideOnlineStatus': {
+      label: 'Invisible mode (Hide online status)',
+      description: 'Stay completely invisible on Instagram Direct without the active status dot',
+    },
+    'instagram.hideSponsoredPosts': {
+      label: 'Hide sponsored posts & ads',
+      description: 'Hide ads and sponsored content in your Instagram feed',
+    },
+    'instagram.protectWebRtcIp': {
+      label: 'WebRTC IP leak shield',
+      description: 'Prevent local and public IP exposure during Instagram Direct calls',
+    },
     'global.stripFbclid': {
       label: 'Strip fbclid from links',
       description: 'Remove tracking identifiers from links you click',

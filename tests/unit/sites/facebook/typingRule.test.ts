@@ -224,5 +224,32 @@ describe('FacebookTypingRule', () => {
       expect(rule.evaluateWorker(null)).toBe('pass');
       expect(rule.evaluateWorker(undefined)).toBe('pass');
     });
+
+    it('never drops outbound message sends in Worker even if typing state exists', () => {
+      expect(rule.evaluateWorker({ action: 'sendMessage', text: 'sdas' })).toBe('pass');
+      expect(
+        rule.evaluateWorker({ action: 'sendMessage', text: '232', state: 'TYPING' }),
+      ).toBe('pass');
+      expect(
+        rule.evaluateWorker([1, 'backend', 'sendMessage', [{ body: 'dadádadasdadadádádádasdasda' }]]),
+      ).toBe('pass');
+    });
+
+    it('never drops /ws/realtime frames carrying outbound user messages', () => {
+      const payload = JSON.stringify({
+        events: [
+          {
+            name: 'messenger_web_ux_event',
+            extra: JSON.stringify({
+              event_name: 'send_typing_indicators',
+              body: '24234234',
+            }),
+          },
+        ],
+      });
+      const bytes = new TextEncoder().encode(payload);
+      const context = new LazyInterceptContext('wss://gateway.facebook.com/ws/realtime', bytes);
+      expect(rule.evaluate(context)).toBeNull();
+    });
   });
 });

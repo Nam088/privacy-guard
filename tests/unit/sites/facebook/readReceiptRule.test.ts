@@ -102,4 +102,22 @@ describe('FacebookReadReceiptRule', () => {
     expect(rule.evaluateWorker({ action: 'send_read_receipt' })).toBe('drop');
     expect(rule.evaluateWorker({ action: 'unrelated_message' })).toBe('pass');
   });
+
+  it('never drops outbound message sends in Worker even if watermark is bundled', () => {
+    expect(rule.evaluateWorker({ action: 'sendMessage', text: 'sdas' })).toBe('pass');
+    expect(rule.evaluateWorker({ action: 'sendMessage', text: '232', thread_read_watermark: 9999 })).toBe('pass');
+    expect(rule.evaluateWorker({ body: 'dadádadasdadadádádádasdasda', updatewatermark: true })).toBe('pass');
+    expect(
+      rule.evaluateWorker([1, 'backend', 'sendMessage', [{ body: '24234234', offline_threading_id: '789' }]]),
+    ).toBe('pass');
+  });
+
+  it('never drops /ws/realtime frames carrying outbound user message payloads', () => {
+    const payload = new TextEncoder().encode(
+      '{"event":"last_read_watermark_ts","thread_id":"123","body":"sdas","watermark_ts":12345}',
+    );
+    const context = new LazyInterceptContext('wss://gateway.facebook.com/ws/realtime?appid=1', payload);
+    expect(rule.evaluate(context)).toBeNull();
+  });
 });
+

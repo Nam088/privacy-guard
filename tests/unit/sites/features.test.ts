@@ -68,6 +68,9 @@ describe.each(MODULES)('site module $id', (site) => {
         'bypassLinkShim',
         'hideSuggestedPosts',
         'hideReels',
+        'hideOnlineStatus',
+        'hideSponsoredPosts',
+        'protectWebRtcIp',
       ],
     };
 

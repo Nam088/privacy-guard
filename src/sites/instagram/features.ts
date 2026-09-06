@@ -49,4 +49,28 @@ export const INSTAGRAM_FEATURES: readonly Feature[] = [
     status: 'active',
     category: 'feed',
   },
+  {
+    id: 'hideOnlineStatus',
+    label: 'Invisible mode (Hide online status)',
+    description: 'Stay completely invisible on Instagram Direct without the active status dot',
+    defaultEnabled: false,
+    status: 'active',
+    category: 'privacy',
+  },
+  {
+    id: 'hideSponsoredPosts',
+    label: 'Hide sponsored posts & ads',
+    description: 'Hide ads and sponsored content in your Instagram feed',
+    defaultEnabled: true,
+    status: 'active',
+    category: 'feed',
+  },
+  {
+    id: 'protectWebRtcIp',
+    label: 'WebRTC IP leak shield',
+    description: 'Prevent local and public IP exposure during Instagram Direct calls',
+    defaultEnabled: true,
+    status: 'active',
+    category: 'privacy',
+  },
 ];
