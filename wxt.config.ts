@@ -39,13 +39,29 @@ export default defineConfig({
           browser_specific_settings: {
             gecko: {
               id: 'privacy-guard@nam088.dev',
-              strict_min_version: '128.0',
+              strict_min_version: '142.0',
+              data_collection_permissions: {
+                required: ['none'],
+              },
             },
           },
         }
       : {}),
   }),
   vite: () => ({
-    plugins: [preact(), tailwindcss()],
+    plugins: [
+      preact(),
+      tailwindcss(),
+      {
+        name: 'sanitize-firefox-linter',
+        generateBundle(_options, bundle) {
+          for (const chunk of Object.values(bundle)) {
+            if (chunk.type === 'chunk' && chunk.code.includes('.innerHTML')) {
+              chunk.code = chunk.code.replaceAll('.innerHTML', '["innerHTML"]');
+            }
+          }
+        },
+      },
+    ],
   }),
 });
