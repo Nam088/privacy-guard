@@ -12,7 +12,8 @@ import {
   parseGraphQLUrl,
 } from '../../facebook/rules/graphqlRequest';
 
-const DIRECT_SEEN_REGEX = /direct.*seen|seen.*direct|mark.*thread.*seen/i;
+const DIRECT_SEEN_REGEX =
+  /readreceipt|markthreadread|mercurythreadmarkread|threadmarkread|readwatermark|direct.*seen|seen.*direct|mark.*thread.*seen/i;
 
 function isInstagramReadReceiptOperation(name: string): boolean {
   if (DIRECT_SEEN_REGEX.test(name)) {
@@ -23,55 +24,99 @@ function isInstagramReadReceiptOperation(name: string): boolean {
 }
 
 /**
- * InstagramReadReceiptRule: Drops seen markers and read receipts in Instagram Direct.
+ * InstagramReadReceiptRule: Strategy for suppressing Instagram Direct read receipts.
  *
- * Intercepts:
- * 1. REST endpoints: /api/v1/direct_v2/threads/.../items/.../seen/
- * 2. GraphQL mutations: direct_thread_seen, PolarisDirectThreadSeenMutation
- * 3. Realtime WebSocket payloads on gateway.instagram.com / edge-chat.instagram.com
+ * In 2026, Instagram Direct runs on Meta's unified LightSpeed/DGW/GraphQL architecture:
+ * 1. DGW task labels: 21 (last_read_watermark_ts), 72, 235.
+ * 2. Realtime WebSocket text/JSON frames on /ws/realtime, /ws/lightspeed, gateway.instagram.com.
+ * 3. GraphQL mutations on /api/graphql.
+ * 4. SharedWorker / MessagePort messages.
+ * 5. Legacy REST endpoints (/seen/).
  */
 export class InstagramReadReceiptRule implements SuppressionRule, HttpSuppressionRule {
   readonly id = 'instagram.hideReadReceipts';
-  readonly targetPaths: readonly string[] = ['/chat', '/ws/realtime', '/pubsub'];
+  readonly targetPaths: readonly string[];
   readonly targetHttpPaths: readonly string[] = [
     ...GRAPHQL_PATHS,
     '/api/v1/direct_v2/threads/',
   ];
 
+  private readonly signalLabels: readonly string[];
+
+  constructor(
+    signalLabels: readonly string[] = INSTAGRAM_SIGNATURES.readReceiptLabels,
+    targetPaths: readonly string[] = INSTAGRAM_SIGNATURES.readReceiptPaths,
+  ) {
+    this.signalLabels = signalLabels;
+    this.targetPaths = targetPaths;
+  }
+
   evaluate(context: InterceptContext): RuleVerdict | null {
     const url = context.url.toLowerCase();
-    const isInstagramWs = INSTAGRAM_SIGNATURES.wsHosts.some((host) => url.includes(host));
-    if (!isInstagramWs) {
-      return null;
-    }
 
-    const bytes = context.getBytes();
-    if (bytes) {
-      try {
-        const text = new TextDecoder('utf-8').decode(bytes);
-        if (
-          text.includes('direct_v2_seen') ||
-          text.includes('thread_seen') ||
-          text.includes('mark_seen') ||
-          text.includes('"action":"seen"')
-        ) {
-          return {
-            action: 'drop',
-            ruleId: this.id,
-            reason: 'instagram-realtime-read-receipt',
-            metadata: { channel: 'instagram.ws' },
-          };
+    // 1. Realtime text / JSON inspection (/ws/realtime, gateway, edge-chat)
+    if (
+      url.includes('/ws/realtime') ||
+      INSTAGRAM_SIGNATURES.wsHosts.some((host) => url.includes(host))
+    ) {
+      const bytes = context.getBytes();
+      if (bytes) {
+        try {
+          const text = new TextDecoder('utf-8').decode(bytes);
+          if (
+            text.includes('last_read_watermark_ts') ||
+            text.includes('mark_thread_read') ||
+            text.includes('thread_read_watermark') ||
+            text.includes('"read_receipt"') ||
+            text.includes('"watermark_ts"') ||
+            text.includes('direct_v2_seen') ||
+            text.includes('thread_seen') ||
+            text.includes('mark_seen') ||
+            text.includes('"action":"seen"')
+          ) {
+            return {
+              action: 'drop',
+              ruleId: this.id,
+              reason: 'instagram-realtime-read-receipt',
+              metadata: { channel: 'instagram.ws' },
+            };
+          }
+        } catch {
+          // fall through to DGW task inspection
         }
-      } catch {
-        // pass through if undecodable
       }
     }
 
-    return null;
+    // 2. DGW binary / task-level inspection (LightSpeed)
+    const { envelope, labels } = context.getDgwTasks();
+    if (envelope === 'unknown' || labels.length === 0) {
+      return null;
+    }
+
+    const signal = labels.filter((label) => this.signalLabels.includes(label));
+    if (signal.length === 0) {
+      return null;
+    }
+
+    if (signal.length !== labels.length) {
+      return {
+        action: 'mixed',
+        ruleId: this.id,
+        reason: 'mixed-read-receipt',
+        metadata: { labels, signal },
+      };
+    }
+
+    return {
+      action: 'drop',
+      ruleId: this.id,
+      reason: 'all-read-receipt',
+      metadata: { labels, signal },
+    };
   }
 
   evaluateHttp(url: string, body: unknown): RuleVerdict | null {
-    // 1. Check REST endpoints
+    // 1. Check REST endpoints (legacy / fallback)
     for (const pattern of INSTAGRAM_SIGNATURES.readReceiptRestPatterns) {
       if (pattern.test(url)) {
         return {
@@ -86,7 +131,7 @@ export class InstagramReadReceiptRule implements SuppressionRule, HttpSuppressio
       }
     }
 
-    // 2. Check GraphQL mutations
+    // 2. Check GraphQL mutations (modern Instagram Web)
     const parsedUrl = parseGraphQLUrl(url);
     if (parsedUrl !== null) {
       const names = collectOperationNames(parsedUrl, body);
@@ -102,5 +147,36 @@ export class InstagramReadReceiptRule implements SuppressionRule, HttpSuppressio
     }
 
     return null;
+  }
+
+  evaluateWorker(data: unknown): 'pass' | 'drop' {
+    if (!data || typeof data !== 'object') {
+      return 'pass';
+    }
+
+    const rec = data as Record<string, unknown>;
+    const candidates = [
+      rec.action,
+      rec.type,
+      rec.name,
+      rec.event,
+      rec.command,
+      rec.actionType,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') {
+        const lowered = candidate.toLowerCase();
+        if (
+          INSTAGRAM_SIGNATURES.readReceiptWorkerActions.some((action) =>
+            lowered.includes(action.toLowerCase()),
+          )
+        ) {
+          return 'drop';
+        }
+      }
+    }
+
+    return 'pass';
   }
 }

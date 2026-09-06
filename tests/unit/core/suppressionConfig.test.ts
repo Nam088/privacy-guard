@@ -111,8 +111,20 @@ describe('buildSuppressionConfig', () => {
 
   // The whole point of keeping the modules separate. Instagram is Meta on a different gateway
   // host where no label has ever been observed, and inheriting these would be a guess.
-  it('does not leak Facebook MQTT labels to Instagram', () => {
-    const config = buildSuppressionConfig('https://www.instagram.com/direct/t/1', on);
+  it('does not leak Facebook settings to Instagram when Instagram features are off', () => {
+    const igOff: Settings = {
+      ...on,
+      features: {
+        ...on.features,
+        'instagram.hideReadReceipts': false,
+        'instagram.hideTyping': false,
+        'instagram.hideStoryViews': false,
+        'instagram.bypassLinkShim': false,
+        'instagram.hideSuggestedPosts': false,
+        'instagram.hideReels': false,
+      },
+    };
+    const config = buildSuppressionConfig('https://www.instagram.com/direct/t/1', igOff);
     expect(config.readReceiptLabels).toEqual([]);
     expect(config.readReceiptPaths).toEqual([]);
     expect(config.typingLabels).toEqual([]);
@@ -324,10 +336,11 @@ describe('buildSuppressionConfig', () => {
     expect(config.hideStoryViews).toBe(true);
     expect(config.bypassLinkShim).toBe(true);
     expect(config.hideSuggestedPosts).toBe(true);
-    expect(config.hideReels).toBe(true);
-    // Should not inherit facebook DGW labels
-    expect(config.readReceiptLabels).toEqual([]);
-    expect(config.typingLabels).toEqual([]);
+    // In 2026, Instagram Direct has its own unified DGW labels for LightSpeed
+    expect(config.readReceiptLabels).toEqual(['21', '72', '235']);
+    expect(config.typingLabels).toEqual(['3']);
+    expect(config.readReceiptPaths).toContain('/ws/realtime');
+    expect(config.typingPaths).toContain('/ws/realtime');
   });
 });
 

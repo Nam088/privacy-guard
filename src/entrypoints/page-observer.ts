@@ -152,10 +152,18 @@ export default defineUnlistedScript(() => {
 
     const activeRules = [];
     if (readReceiptLabels.length > 0) {
-      activeRules.push(new FacebookReadReceiptRule(readReceiptLabels, detail.readReceiptPaths));
+      if (isInstagramSite) {
+        activeRules.push(new InstagramReadReceiptRule(readReceiptLabels, detail.readReceiptPaths));
+      } else {
+        activeRules.push(new FacebookReadReceiptRule(readReceiptLabels, detail.readReceiptPaths));
+      }
     }
     if (typingLabels.length > 0) {
-      activeRules.push(new FacebookTypingRule(typingLabels, detail.typingPaths));
+      if (isInstagramSite) {
+        activeRules.push(new InstagramTypingRule(typingLabels, detail.typingPaths));
+      } else {
+        activeRules.push(new FacebookTypingRule(typingLabels, detail.typingPaths));
+      }
     }
     if (inboxWatermarkLabels.length > 0) {
       activeRules.push(
@@ -248,13 +256,17 @@ export default defineUnlistedScript(() => {
 
   function interceptWorker(data: unknown): 'pass' | 'drop' {
     if (typingActive) {
-      const verdict = typingHttpRule.evaluateWorker(data);
+      const verdict = isInstagramSite
+        ? igTypingRule.evaluateWorker(data)
+        : typingHttpRule.evaluateWorker(data);
       if (verdict === 'drop') {
         return 'drop';
       }
     }
     if (readReceiptsActive) {
-      const verdict = readReceiptHttpRule.evaluateWorker(data);
+      const verdict = isInstagramSite
+        ? igReadReceiptRule.evaluateWorker(data)
+        : readReceiptHttpRule.evaluateWorker(data);
       if (verdict === 'drop') {
         return 'drop';
       }

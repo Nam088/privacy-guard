@@ -1,5 +1,6 @@
 import { isFeatureOn, type Settings } from './settings/schema';
 import { FACEBOOK_SIGNATURES } from '@/sites/facebook/signatures';
+import { INSTAGRAM_SIGNATURES } from '@/sites/instagram/signatures';
 import { findSiteForUrl, isMessagingSurface } from '@/sites/registry';
 import { featureKey } from '@/sites/types';
 
@@ -89,6 +90,19 @@ export function buildSuppressionConfig(
     if (isInboxLastSeenOn) {
       inboxWatermarkLabels = FACEBOOK_SIGNATURES.inboxWatermarkLabels;
       inboxWatermarkPaths = FACEBOOK_SIGNATURES.inboxWatermarkPaths;
+    }
+  } else if (site.id === 'instagram') {
+    if (isReadOn) {
+      readReceiptLabels = INSTAGRAM_SIGNATURES.readReceiptLabels;
+      readReceiptPaths = INSTAGRAM_SIGNATURES.readReceiptPaths;
+    }
+    if (isTypingOn) {
+      typingLabels = INSTAGRAM_SIGNATURES.typingLabels;
+      typingPaths = INSTAGRAM_SIGNATURES.typingPaths;
+    }
+    if (isInboxLastSeenOn) {
+      inboxWatermarkLabels = INSTAGRAM_SIGNATURES.inboxWatermarkLabels;
+      inboxWatermarkPaths = INSTAGRAM_SIGNATURES.inboxWatermarkPaths;
     }
   }
 

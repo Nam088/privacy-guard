@@ -12,10 +12,11 @@ import {
   parseGraphQLUrl,
 } from '../../facebook/rules/graphqlRequest';
 
-const DIRECT_TYPING_REGEX = /direct.*typing|activity.*status|polaris.*activity/i;
+const TYPING_MUTATION_PATTERN =
+  /typing.{0,30}mutation|typsubscription|direct.*typing|activity.*status|polaris.*activity/i;
 
 function isInstagramTypingOperation(name: string): boolean {
-  if (DIRECT_TYPING_REGEX.test(name)) {
+  if (TYPING_MUTATION_PATTERN.test(name)) {
     return true;
   }
   const lowered = name.toLowerCase();
@@ -23,56 +24,106 @@ function isInstagramTypingOperation(name: string): boolean {
 }
 
 /**
- * InstagramTypingRule: Suppresses typing indicators in Instagram Direct.
+ * InstagramTypingRule: Strategy for suppressing Instagram Direct typing indicators.
  *
- * Drops typing starts (activity_status=1 / typing=true) while preserving idle/stop signals
- * so the conversation state remains stable.
+ * In 2026, Instagram Direct uses Meta's unified LightSpeed / DGW task label 3,
+ * realtime WebSocket frames, and GraphQL typing mutations.
+ *
+ * Drops typing pings while preserving idle / stop-typing signals so the UI state doesn't freeze.
  */
 export class InstagramTypingRule implements SuppressionRule, HttpSuppressionRule {
   readonly id = 'instagram.hideTyping';
-  readonly targetPaths: readonly string[] = ['/chat', '/ws/realtime', '/pubsub'];
+  readonly targetPaths: readonly string[];
   readonly targetHttpPaths: readonly string[] = [
     ...GRAPHQL_PATHS,
     '/api/v1/direct_v2/threads/',
   ];
 
+  private readonly signalLabels: readonly string[];
+
+  constructor(
+    signalLabels: readonly string[] = INSTAGRAM_SIGNATURES.typingLabels,
+    targetPaths: readonly string[] = INSTAGRAM_SIGNATURES.typingPaths,
+  ) {
+    this.signalLabels = signalLabels;
+    this.targetPaths = targetPaths;
+  }
+
   evaluate(context: InterceptContext): RuleVerdict | null {
     const url = context.url.toLowerCase();
-    const isInstagramWs = INSTAGRAM_SIGNATURES.wsHosts.some((host) => url.includes(host));
-    if (!isInstagramWs) {
+
+    // 1. Realtime text frame inspection (/ws/realtime, gateway, edge-chat)
+    if (
+      url.includes('/ws/realtime') ||
+      INSTAGRAM_SIGNATURES.wsHosts.some((host) => url.includes(host))
+    ) {
+      const bytes = context.getBytes();
+      if (bytes) {
+        try {
+          const text = new TextDecoder('utf-8').decode(bytes);
+          // If explicitly idle/stopped typing (status 0), allow it to clear typing state
+          if (
+            text.includes('"activity_status":"0"') ||
+            text.includes('"activity_status":0') ||
+            text.includes('"is_typing":0') ||
+            text.includes('"is_typing":"0"')
+          ) {
+            return null;
+          }
+
+          if (
+            text.includes('activity_status_indication') ||
+            text.includes('typing_indicator') ||
+            (text.includes('"activity_status"') && text.includes('"1"')) ||
+            (text.includes('"is_typing"') && (text.includes('"1"') || text.includes(':1')))
+          ) {
+            return {
+              action: 'drop',
+              ruleId: this.id,
+              reason: 'instagram-realtime-typing',
+              metadata: { channel: 'instagram.ws' },
+            };
+          }
+        } catch {
+          // fall through to DGW task inspection
+        }
+      }
+    }
+
+    // 2. DGW task label 3 inspection
+    const { envelope, labels } = context.getDgwTasks();
+    if (envelope === 'unknown' || labels.length === 0) {
       return null;
     }
 
+    const signal = labels.filter((label) => this.signalLabels.includes(label));
+    if (signal.length === 0) {
+      return null;
+    }
+
+    // Check payload if available: allow is_typing: 0 through to clear typing
     const bytes = context.getBytes();
     if (bytes) {
       try {
         const text = new TextDecoder('utf-8').decode(bytes);
-        if (
-          text.includes('activity_status_indication') ||
-          text.includes('typing_indicator') ||
-          (text.includes('"activity_status"') && text.includes('"1"'))
-        ) {
-          // If explicitly idle/stopped (status 0), allow it to clear typing
-          if (text.includes('"activity_status":"0"') || text.includes('"activity_status":0')) {
-            return null;
-          }
-          return {
-            action: 'drop',
-            ruleId: this.id,
-            reason: 'instagram-realtime-typing',
-            metadata: { channel: 'instagram.ws' },
-          };
+        if (text.includes('"is_typing":0') || text.includes('"is_typing":"0"')) {
+          return null;
         }
       } catch {
-        // pass through if undecodable
+        // drop if undecodable but carries typing task label
       }
     }
 
-    return null;
+    return {
+      action: 'drop',
+      ruleId: this.id,
+      reason: 'all-typing',
+      metadata: { labels, signal },
+    };
   }
 
   evaluateHttp(url: string, body: unknown): RuleVerdict | null {
-    // 1. Check REST endpoints
+    // 1. Check REST endpoints (legacy / fallback)
     for (const pattern of INSTAGRAM_SIGNATURES.typingRestPatterns) {
       if (pattern.test(url)) {
         let bodyString = '';
@@ -86,14 +137,13 @@ export class InstagramTypingRule implements SuppressionRule, HttpSuppressionRule
           }
         }
 
-        // Check if this is an idle / stop-typing signal
+        // Allow idle status through to clear typing indicator
         const isIdle =
           bodyString.includes('activity_status=0') ||
-          bodyString.includes('"activity_status":0') ||
-          bodyString.includes('"activity_status":"0"');
+          bodyString.includes('"activity_status":"0"') ||
+          bodyString.includes('"activity_status":0');
 
         if (isIdle) {
-          // Allow idle signal through to stop typing bubble cleanly
           return null;
         }
 
@@ -109,7 +159,7 @@ export class InstagramTypingRule implements SuppressionRule, HttpSuppressionRule
       }
     }
 
-    // 2. Check GraphQL mutations
+    // 2. Check GraphQL mutations (modern Instagram Web)
     const parsedUrl = parseGraphQLUrl(url);
     if (parsedUrl !== null) {
       const names = collectOperationNames(parsedUrl, body);
@@ -125,5 +175,36 @@ export class InstagramTypingRule implements SuppressionRule, HttpSuppressionRule
     }
 
     return null;
+  }
+
+  evaluateWorker(data: unknown): 'pass' | 'drop' {
+    if (!data || typeof data !== 'object') {
+      return 'pass';
+    }
+
+    const rec = data as Record<string, unknown>;
+    const candidates = [
+      rec.action,
+      rec.type,
+      rec.name,
+      rec.event,
+      rec.command,
+      rec.actionType,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') {
+        const lowered = candidate.toLowerCase();
+        if (
+          INSTAGRAM_SIGNATURES.typingWorkerActions.some((action) =>
+            lowered.includes(action.toLowerCase()),
+          )
+        ) {
+          return 'drop';
+        }
+      }
+    }
+
+    return 'pass';
   }
 }
