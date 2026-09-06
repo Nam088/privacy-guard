@@ -1,0 +1,9 @@
+packages:
+  - '.'
+
+minimumReleaseAgeExclude:
+  - '@preact/signals@2.11.2'
+  - eslint@10.10.0
+  - '@playwright/test@1.63.0'
+  - playwright-core@1.63.0
+  - playwright@1.63.0

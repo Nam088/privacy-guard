@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Semantic version bump type (patch, minor, major)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  auto-release:
+    name: Auto Tag & Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Automatically generate tag and changelog
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release_branches: main
+          default_bump: minor
+          fetch_all_tags: true
+
+      - name: Check if new release tag exists
+        id: check_release
+        run: |
+          if [ -n "${{ steps.tag_version.outputs.new_tag }}" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "Next release tag: ${{ steps.tag_version.outputs.new_tag }}"
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "No new version tag generated. Skipping build and release."
+          fi
+
+      - name: Install pnpm
+        if: steps.check_release.outputs.should_release == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js 22
+        if: steps.check_release.outputs.should_release == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        if: steps.check_release.outputs.should_release == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Check code formatting & lint
+        if: steps.check_release.outputs.should_release == 'true'
+        run: pnpm lint
+
+      - name: Type check (TypeScript)
+        if: steps.check_release.outputs.should_release == 'true'
+        run: pnpm compile
+
+      - name: Run unit test suite
+        if: steps.check_release.outputs.should_release == 'true'
+        run: pnpm test
+
+      - name: Build & package extensions
+        if: steps.check_release.outputs.should_release == 'true'
+        run: pnpm zip:all
+
+      - name: Prepare release assets
+        if: steps.check_release.outputs.should_release == 'true'
+        run: |
+          mkdir -p release-assets
+          cp .output/*-chrome.zip release-assets/
+          cp .output/*-edge.zip release-assets/
+          cp .output/*-firefox.zip release-assets/
+          cd release-assets
+          sha256sum *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release with Auto Changelog
+        if: steps.check_release.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+          files: release-assets/*
+          draft: false
+          prerelease: false

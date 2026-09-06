@@ -1,0 +1,108 @@
+import type { TranslationDictionary } from '../types';
+
+export const vi: TranslationDictionary = {
+  app: {
+    name: 'Privacy Guard',
+    protectionOn: 'Bảo vệ đang bật',
+    protectionPaused: 'Đang tạm dừng bảo vệ',
+    protection: 'Bảo vệ',
+    openSiteHint:
+      'Mở Facebook, Messenger hoặc Instagram để điều khiển cho trang đó. Các cài đặt bên dưới áp dụng cho mọi trang web.',
+    footerNotice: 'Chỉ hoạt động trên phiên của bạn. Privacy Guard không gửi dữ liệu đi bất cứ đâu.',
+  },
+  section: {
+    allWebsites: 'Tất cả trang web',
+    feed: 'Bảng tin & Nội dung',
+    privacy: 'Tin nhắn & Quyền riêng tư',
+  },
+  tabs: {
+    feed: 'Bảng tin',
+    privacy: 'Riêng tư',
+    global: 'Toàn web',
+    all: 'Tất cả',
+  },
+  common: {
+    soon: 'Sắp ra mắt',
+    auto: 'Tự động',
+    activeCount: 'đang bật',
+  },
+  site: {
+    facebook: 'Facebook',
+    messenger: 'Messenger',
+    instagram: 'Instagram',
+  },
+  features: {
+    'facebook.hideReadReceipts': {
+      label: 'Chặn đã xem tin nhắn',
+      description: 'Đọc tin nhắn mà không để người gửi biết bạn đã xem',
+    },
+    'facebook.hideTyping': {
+      label: 'Chặn đang soạn tin nhắn',
+      description: 'Không hiển thị ba dấu chấm khi bạn đang gõ phím',
+    },
+    'facebook.hideStoryViews': {
+      label: 'Xem tin ẩn danh (Story)',
+      description: 'Xem story mà không xuất hiện trong danh sách người xem',
+    },
+    'facebook.blockFeedAutoRefresh': {
+      label: 'Chặn tự động tải lại bảng tin',
+      description: 'Giữ nguyên vị trí đang lướt khi bạn chuyển tab quay lại',
+    },
+    'facebook.hideInboxLastSeen': {
+      label: 'Ẩn thời điểm bạn mở hộp thư',
+      description: 'Không để Messenger ghi lại thời điểm bạn xem danh sách trò chuyện lần cuối',
+    },
+    'facebook.hideSponsoredPosts': {
+      label: 'Ẩn bài viết được tài trợ',
+      description: 'Ẩn các bài viết quảng cáo và tài trợ trên bảng tin của bạn',
+    },
+    'facebook.hideSuggestedPosts': {
+      label: 'Ẩn bài viết gợi ý',
+      description: 'Chỉ hiển thị bài viết từ bạn bè và các trang bạn đang theo dõi',
+    },
+    'facebook.hideReels': {
+      label: 'Ẩn Reels & Video ngắn',
+      description: 'Ẩn các mục Reels, Thước phim và khay video ngắn trên bảng tin',
+    },
+    'facebook.hideOnlineStatus': {
+      label: 'Chế độ tàng hình (Ẩn chấm xanh)',
+      description: 'Lướt Messenger hoàn toàn ẩn danh không bao giờ hiện chấm xanh hoạt động',
+    },
+    'facebook.protectWebRtcIp': {
+      label: 'Chống rò rỉ IP qua WebRTC',
+      description: 'Ngăn chặn lộ địa chỉ IP thật của bạn trong các cuộc gọi Messenger',
+    },
+    'facebook.hideVoicePlayed': {
+      label: 'Ẩn trạng thái đã nghe tin nhắn thoại',
+      description: 'Nghe tin nhắn thoại mà không để đối phương biết bạn đã nghe',
+    },
+    'facebook.scrambleDwellTime': {
+      label: 'Chặn đo thời gian dừng xem (Dwell Time)',
+      description: 'Chặn Meta đo thời gian bạn dừng lại đọc từng bài viết và video',
+    },
+    'facebook.bypassLinkShim': {
+      label: 'Bỏ qua chuyển hướng theo dõi (Link Shim)',
+      description: 'Mở trực tiếp liên kết bên ngoài mà không qua máy chủ theo dõi của Facebook',
+    },
+    'instagram.hideReadReceipts': {
+      label: 'Chặn đã xem tin nhắn',
+      description: 'Đọc tin nhắn Instagram Direct mà không gửi thông báo đã xem',
+    },
+    'instagram.hideTyping': {
+      label: 'Chặn đang soạn tin nhắn',
+      description: 'Không hiển thị bong bóng đang gõ trong tin nhắn Direct',
+    },
+    'instagram.hideStoryViews': {
+      label: 'Xem tin ẩn danh (Story)',
+      description: 'Xem story mà không xuất hiện trong danh sách người xem',
+    },
+    'global.stripFbclid': {
+      label: 'Xóa mã theo dõi fbclid',
+      description: 'Gỡ bỏ tham số định danh theo dõi fbclid khỏi các liên kết bạn bấm vào',
+    },
+    'global.blockMetaPixel': {
+      label: 'Chặn mã theo dõi Meta Pixel',
+      description: 'Chặn các đoạn mã theo dõi Meta Pixel và phân tích trên các trang web bên thứ ba',
+    },
+  },
+};

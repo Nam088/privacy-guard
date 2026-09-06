@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Solid Flat Shield -->
+  <path
+    d="M 256,48
+       C 336,48 420,78 436,98
+       C 446,110 448,132 448,164
+       C 448,284 376,396 256,454
+       C 136,396 64,284 64,164
+       C 64,132 66,110 76,98
+       C 92,78 176,48 256,48 Z"
+    fill="#2563EB"
+  />
+  <!-- Bold White Checkmark -->
+  <path
+    d="M 168,252 L 232,316 L 344,196"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="40"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
