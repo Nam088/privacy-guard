@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { buildSuppressionConfig } from '@/core/suppressionConfig';
-import { SITE_MODULES } from '@/sites/registry';
 import { DEFAULT_SETTINGS, type Settings } from '@/core/settings/schema';
 import { FACEBOOK_SIGNATURES } from '@/sites/facebook/signatures';
 
@@ -73,7 +72,8 @@ describe('buildSuppressionConfig', () => {
         inboxWatermarkPaths: [],
         hideStoryViews: true,
         hideTyping: true,
-        blockFeedAutoRefresh: true,
+        // Feed auto-refresh blocking is a browsing-surface feature: an inbox has no feed to
+        // hold in place, and spoofing an always-visible tab there costs realtime resync.
         hideSponsoredPosts: true,
         hideSuggestedPosts: true,
         hideReels: true,
@@ -111,26 +111,37 @@ describe('buildSuppressionConfig', () => {
 
   // The whole point of keeping the modules separate. Instagram is Meta on a different gateway
   // host where no label has ever been observed, and inheriting these would be a guess.
-  it('grants Instagram nothing', () => {
-    expect(buildSuppressionConfig('https://www.instagram.com/direct/t/1', on)).toEqual(NOTHING);
+  it('does not leak Facebook MQTT labels to Instagram', () => {
+    const config = buildSuppressionConfig('https://www.instagram.com/direct/t/1', on);
+    expect(config.readReceiptLabels).toEqual([]);
+    expect(config.readReceiptPaths).toEqual([]);
+    expect(config.typingLabels).toEqual([]);
+    expect(config.typingPaths).toEqual([]);
+    expect(config.inboxWatermarkLabels).toEqual([]);
+    expect(config.inboxWatermarkPaths).toEqual([]);
   });
 
-  // Found by mutation: deleting the site check broke nothing, because Instagram's own
-  // hideReadReceipts is `planned` and the feature status was silently doing the work. The day that
-  // status changes, this is the test that has to fail rather than the labels leaking across.
-  it('grants Instagram nothing even though it lists the same feature', () => {
-    expect(
-      SITE_MODULES.find((module) => module.id === 'instagram')?.features.map((f) => f.id),
-    ).toContain('hideReadReceipts');
-
-    const everythingOn: Settings = {
+  it('keeps Instagram suppression strictly separate from Facebook feature switches', () => {
+    const igOff: Settings = {
       ...DEFAULT_SETTINGS,
-      features: Object.fromEntries(
-        SITE_MODULES.flatMap((module) => module.features.map((f) => [`${module.id}.${f.id}`, true])),
-      ),
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'instagram.hideReadReceipts': false,
+        'instagram.hideTyping': false,
+        'instagram.hideStoryViews': false,
+        'instagram.bypassLinkShim': false,
+        'instagram.hideSuggestedPosts': false,
+        'instagram.hideReels': false,
+        'facebook.hideReadReceipts': true,
+        'facebook.hideTyping': true,
+        'facebook.hideStoryViews': true,
+        'facebook.bypassLinkShim': true,
+        'facebook.hideSuggestedPosts': true,
+        'facebook.hideReels': true,
+      },
     };
 
-    expect(buildSuppressionConfig('https://www.instagram.com/direct/t/1', everythingOn)).toEqual(
+    expect(buildSuppressionConfig('https://www.instagram.com/direct/t/1', igOff)).toEqual(
       NOTHING,
     );
   });
@@ -171,7 +182,11 @@ describe('buildSuppressionConfig', () => {
   it('grants hideStoryViews on facebook when enabled', () => {
     const withStory: Settings = {
       ...DEFAULT_SETTINGS,
-      features: { ...DEFAULT_SETTINGS.features, 'facebook.hideStoryViews': true },
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.hideStoryViews': true,
+        'instagram.hideStoryViews': false,
+      },
     };
     expect(buildSuppressionConfig('https://www.facebook.com/', withStory).hideStoryViews).toBe(true);
     expect(
@@ -200,6 +215,31 @@ describe('buildSuppressionConfig', () => {
     ).toBeUndefined();
   });
 
+  it('withholds blockFeedAutoRefresh on messaging surfaces', () => {
+    const withFeed: Settings = {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.blockFeedAutoRefresh': true,
+        'instagram.blockFeedAutoRefresh': true,
+      },
+    };
+
+    for (const url of [
+      'https://www.messenger.com/t/1',
+      'https://www.facebook.com/messages',
+      'https://www.facebook.com/messages/t/1',
+      'https://www.instagram.com/direct/inbox/',
+    ]) {
+      expect(buildSuppressionConfig(url, withFeed).blockFeedAutoRefresh).toBeUndefined();
+    }
+
+    // The browsing surface of the same site still gets it.
+    expect(
+      buildSuppressionConfig('https://www.facebook.com/', withFeed).blockFeedAutoRefresh,
+    ).toBe(true);
+  });
+
   it('grants hideSponsoredPosts on facebook when enabled', () => {
     const withSponsored: Settings = {
       ...DEFAULT_SETTINGS,
@@ -216,7 +256,11 @@ describe('buildSuppressionConfig', () => {
   it('grants hideSuggestedPosts on facebook when enabled', () => {
     const withDeclutter: Settings = {
       ...DEFAULT_SETTINGS,
-      features: { ...DEFAULT_SETTINGS.features, 'facebook.hideSuggestedPosts': true },
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.hideSuggestedPosts': true,
+        'instagram.hideSuggestedPosts': false,
+      },
     };
     expect(buildSuppressionConfig('https://www.facebook.com/', withDeclutter).hideSuggestedPosts).toBe(
       true,
@@ -229,7 +273,11 @@ describe('buildSuppressionConfig', () => {
   it('grants hideReels on facebook when enabled', () => {
     const withReels: Settings = {
       ...DEFAULT_SETTINGS,
-      features: { ...DEFAULT_SETTINGS.features, 'facebook.hideReels': true },
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.hideReels': true,
+        'instagram.hideReels': false,
+      },
     };
     expect(buildSuppressionConfig('https://www.facebook.com/', withReels).hideReels).toBe(
       true,
@@ -242,7 +290,11 @@ describe('buildSuppressionConfig', () => {
   it('grants bypassLinkShim on facebook when enabled', () => {
     const withLinkShim: Settings = {
       ...DEFAULT_SETTINGS,
-      features: { ...DEFAULT_SETTINGS.features, 'facebook.bypassLinkShim': true },
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.bypassLinkShim': true,
+        'instagram.bypassLinkShim': false,
+      },
     };
     expect(buildSuppressionConfig('https://www.facebook.com/', withLinkShim).bypassLinkShim).toBe(
       true,
@@ -251,5 +303,32 @@ describe('buildSuppressionConfig', () => {
       buildSuppressionConfig('https://www.instagram.com/', withLinkShim).bypassLinkShim,
     ).toBeUndefined();
   });
+
+  it('correctly builds suppression config for instagram when features are enabled', () => {
+    const igSettings: Settings = {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'instagram.hideReadReceipts': true,
+        'instagram.hideTyping': true,
+        'instagram.hideStoryViews': true,
+        'instagram.bypassLinkShim': true,
+        'instagram.hideSuggestedPosts': true,
+        'instagram.hideReels': true,
+      },
+    };
+
+    const config = buildSuppressionConfig('https://www.instagram.com/direct/t/123', igSettings);
+    expect(config.hideReadReceipts).toBe(true);
+    expect(config.hideTyping).toBe(true);
+    expect(config.hideStoryViews).toBe(true);
+    expect(config.bypassLinkShim).toBe(true);
+    expect(config.hideSuggestedPosts).toBe(true);
+    expect(config.hideReels).toBe(true);
+    // Should not inherit facebook DGW labels
+    expect(config.readReceiptLabels).toEqual([]);
+    expect(config.typingLabels).toEqual([]);
+  });
 });
+
 

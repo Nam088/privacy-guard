@@ -3,7 +3,7 @@ import { installObservers } from '@/observe/install';
 import { scrub } from '@/observe/scrub';
 import type { ObservedEvent } from '@/observe/types';
 import type { SendDecision, SendVerdict } from '@/observe/websocket';
-import { RuleEngine } from '@/engine';
+import { LazyInterceptContext, RuleEngine } from '@/engine';
 import {
   FacebookInboxWatermarkRule,
   FacebookReadReceiptRule,
@@ -11,6 +11,11 @@ import {
   FacebookTypingRule,
   FacebookVoiceMemoRule,
 } from '@/sites/facebook/rules';
+import {
+  InstagramReadReceiptRule,
+  InstagramStoryViewsRule,
+  InstagramTypingRule,
+} from '@/sites/instagram/rules';
 import { transformStreamControllerPresence } from '@/observe/stealthPresence';
 import { isDwellTelemetryData } from '@/observe/telemetry';
 import {
@@ -25,6 +30,8 @@ export const CONFIGURE_EVENT = 'privacy-guard:configure';
 
 export interface ObserverConfig {
   readonly capture?: boolean;
+  /** Whether read receipts should be suppressed (supports both Facebook and Instagram). */
+  readonly hideReadReceipts?: boolean;
   /** Read receipt task labels to suppress. Empty means suppress none, which is the start state. */
   readonly readReceiptLabels?: readonly string[];
   /** Socket paths the read receipt labels were observed on. A frame elsewhere is never inspected. */
@@ -71,6 +78,10 @@ export default defineUnlistedScript(() => {
   const typingHttpRule = new FacebookTypingRule();
   const readReceiptHttpRule = new FacebookReadReceiptRule();
 
+  const igStoryRule = new InstagramStoryViewsRule();
+  const igTypingRule = new InstagramTypingRule();
+  const igReadReceiptRule = new InstagramReadReceiptRule();
+
   let storyViewsActive = false;
   let typingActive = false;
   let feedAutoRefreshActive = false;
@@ -85,9 +96,14 @@ export default defineUnlistedScript(() => {
   let linkShimBypassed = false;
 
   let isFacebookSite = false;
+  let isInstagramSite = false;
   const currentSite = findSiteForUrl(location.href);
-  if (currentSite && currentSite.id === 'facebook') {
-    isFacebookSite = true;
+  if (currentSite) {
+    if (currentSite.id === 'facebook') {
+      isFacebookSite = true;
+    } else if (currentSite.id === 'instagram') {
+      isInstagramSite = true;
+    }
   }
 
   attachLinkShimBypass(document, () => linkShimBypassed);
@@ -132,7 +148,7 @@ export default defineUnlistedScript(() => {
     const typingLabels = detail.typingLabels ?? [];
     const inboxWatermarkLabels = detail.inboxWatermarkLabels ?? [];
 
-    readReceiptsActive = readReceiptLabels.length > 0;
+    readReceiptsActive = Boolean(detail.hideReadReceipts) || readReceiptLabels.length > 0;
 
     const activeRules = [];
     if (readReceiptLabels.length > 0) {
@@ -157,6 +173,23 @@ export default defineUnlistedScript(() => {
     if (dwellTimeScrambled && url.includes('/ws/realtime') && isDwellTelemetryData(data)) {
       return 'drop';
     }
+
+    if (isInstagramSite) {
+      const context = new LazyInterceptContext(url, data);
+      if (readReceiptsActive) {
+        const readVerdict = igReadReceiptRule.evaluate(context);
+        if (readVerdict && readVerdict.action === 'drop') {
+          return 'drop';
+        }
+      }
+      if (typingActive) {
+        const typingVerdict = igTypingRule.evaluate(context);
+        if (typingVerdict && typingVerdict.action === 'drop') {
+          return 'drop';
+        }
+      }
+    }
+
     const decision = engine.intercept(url, data);
     return decision.action;
   }
@@ -164,6 +197,28 @@ export default defineUnlistedScript(() => {
   const interceptReceive = (): 'pass' | 'drop' => 'pass';
 
   function interceptHttp(url: string, body?: unknown): 'pass' | 'drop' {
+    if (isInstagramSite) {
+      if (storyViewsActive) {
+        const storyVerdict = igStoryRule.evaluateHttp(url, body);
+        if (storyVerdict && storyVerdict.action === 'drop') {
+          return 'drop';
+        }
+      }
+      if (typingActive) {
+        const typingVerdict = igTypingRule.evaluateHttp(url, body);
+        if (typingVerdict && typingVerdict.action === 'drop') {
+          return 'drop';
+        }
+      }
+      if (readReceiptsActive) {
+        const readVerdict = igReadReceiptRule.evaluateHttp(url, body);
+        if (readVerdict && readVerdict.action === 'drop') {
+          return 'drop';
+        }
+      }
+      return 'pass';
+    }
+
     if (storyViewsActive) {
       const storyVerdict = storyRule.evaluateHttp(url, body);
       if (storyVerdict && storyVerdict.action === 'drop') {
@@ -209,7 +264,7 @@ export default defineUnlistedScript(() => {
 
   let isTypingSuppressed: (() => boolean) | undefined = undefined;
   let isReadSuppressed: (() => boolean) | undefined = undefined;
-  if (isFacebookSite) {
+  if (isFacebookSite || isInstagramSite) {
     isTypingSuppressed = () => typingActive;
     isReadSuppressed = () => readReceiptsActive;
   }
@@ -217,7 +272,7 @@ export default defineUnlistedScript(() => {
   let isSponsoredActive: (() => boolean) | undefined = undefined;
   let isSuggestedActive: (() => boolean) | undefined = undefined;
   let isReelsActive: (() => boolean) | undefined = undefined;
-  if (isFacebookSite) {
+  if (isFacebookSite || isInstagramSite) {
     isSponsoredActive = () => sponsoredPostsActive;
     isSuggestedActive = () => suggestedPostsActive;
     isReelsActive = () => reelsActive;

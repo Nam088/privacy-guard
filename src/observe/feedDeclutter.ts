@@ -47,6 +47,11 @@ div[data-virtualized="false"]:has([data-ad-rendering-role^="cta"]),
 div[data-virtualized="false"]:has(a[href*="#?abf"]),
 div[data-virtualized="false"]:has(div[data-0][data-1][data-2]),
 
+/* Instagram Sponsored */
+article:has(a[href*="/ads/about/"]),
+article:has(a[href*="/about/ads"]),
+article:has(a[href*="paid_partnership"]),
+
 .${SPONSORED_HIDDEN_CLASS} {
   display: none !important;
   height: 0 !important;
@@ -64,6 +69,10 @@ div[data-pagelet^="FeedUnit_"]:has([data-ad-rendering-role="profile_name"] h4 [r
 div[data-pagelet^="FeedUnit_"]:has([data-ad-rendering-role="profile_name"] h4 button),
 div[data-virtualized="false"]:has([data-ad-rendering-role="profile_name"] h4 [role="button"]),
 div[data-virtualized="false"]:has([data-ad-rendering-role="profile_name"] h4 button),
+
+/* Instagram Suggested */
+article:has(a[href*="suggested"]),
+div[data-testid*="suggested"],
 
 .${SUGGESTED_HIDDEN_CLASS} {
   display: none !important;
@@ -86,6 +95,11 @@ div[data-virtualized="false"]:has(a[href*="/reel/"]),
 div[data-virtualized="false"]:has(a[href*="/reels/"]),
 div[data-virtualized="false"]:has([data-pagelet*="Reels"]),
 div[data-virtualized="false"]:has([data-pagelet*="ShortVideos"]),
+
+/* Instagram Reels */
+article:has(a[href^="/reel/"]),
+article:has(a[href^="/reels/"]),
+div:has(> a[href^="/reels/"]),
 
 .${REELS_HIDDEN_CLASS} {
   display: none !important;
@@ -347,7 +361,9 @@ function sweepFeed(
     legacyStyle.disabled = !(sponsoredOn || suggestedOn || reelsOn);
   }
 
-  const feedUnits = doc.querySelectorAll('div[data-pagelet^="FeedUnit_"], div[data-virtualized="false"]');
+  const feedUnits = doc.querySelectorAll(
+    'div[data-pagelet^="FeedUnit_"], div[data-virtualized="false"], article',
+  );
   for (let i = 0; i < feedUnits.length; i += 1) {
     const unit = feedUnits[i];
     if (unit) {

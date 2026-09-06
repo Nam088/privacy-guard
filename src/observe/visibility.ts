@@ -9,17 +9,187 @@
  *
  * This interceptor preserves reading position by spoofing an active foreground state
  * and defusing tab-switching event listeners when feed auto-refresh blocking is enabled.
+ *
+ * Two decisions are worth stating, because the obvious implementation gets both wrong.
+ *
+ * Listeners are registered for real and neutralised at dispatch time, not dropped at
+ * registration time. A dropped registration cannot be handed back when the user turns the
+ * feature off, which leaves the page permanently deaf to its own events until a reload.
+ *
+ * `pagehide` and `pageshow` are left alone. A page flushes queued work on `pagehide`, message
+ * sends and beacons among it, and restores state on `pageshow`. Swallowing those risks losing
+ * data and buys nothing: feed reloading keys off visibility and focus, not off page transitions.
  */
 
 const BLOCKED_WINDOW_EVENTS = new Set([
   'visibilitychange',
   'blur',
   'focus',
-  'pagehide',
-  'pageshow',
 ]);
 
 const BLOCKED_DOCUMENT_EVENTS = new Set(['visibilitychange']);
+
+type Listener = EventListenerOrEventListenerObject;
+type ListenerOptions = boolean | AddEventListenerOptions;
+
+/**
+ * One page listener can be registered for several events and in both phases, so a single
+ * wrapper per listener would not do. Keyed per (listener, type, phase), and weak so a page
+ * that drops a listener without unregistering it does not leak.
+ */
+type WrapperRegistry = WeakMap<object, Map<string, EventListener>>;
+
+function isCapture(options?: ListenerOptions): boolean {
+  if (typeof options === 'boolean') {
+    return options;
+  }
+  if (options && typeof options === 'object') {
+    return Boolean(options.capture);
+  }
+  return false;
+}
+
+function wrapperKey(type: string, options?: ListenerOptions): string {
+  return `${type}|${isCapture(options) ? 'capture' : 'bubble'}`;
+}
+
+function callListener(listener: Listener, thisArg: unknown, event: Event): void {
+  if (typeof listener === 'function') {
+    listener.call(thisArg, event);
+    return;
+  }
+  if (listener && typeof listener.handleEvent === 'function') {
+    listener.handleEvent(event);
+  }
+}
+
+/**
+ * The wrapper actually registered in the page's place. It swallows the event only while the
+ * feature is on, so flipping the toggle takes effect on the next event with no reload.
+ *
+ * Known limit: a `{ once: true }` listener is spent by a swallowed dispatch, since the browser
+ * retires the wrapper whether or not it passed the event on.
+ */
+function resolveWrapper(
+  registry: WrapperRegistry,
+  listener: Listener,
+  type: string,
+  options: ListenerOptions | undefined,
+  isBlocked: () => boolean,
+): EventListener {
+  const key = wrapperKey(type, options);
+  let byKey = registry.get(listener as object);
+  if (!byKey) {
+    byKey = new Map<string, EventListener>();
+    registry.set(listener as object, byKey);
+  }
+
+  const existing = byKey.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const wrapper: EventListener = function (this: unknown, event: Event): void {
+    if (isBlocked()) {
+      return;
+    }
+    callListener(listener, this, event);
+  };
+  byKey.set(key, wrapper);
+  return wrapper;
+}
+
+function findWrapper(
+  registry: WrapperRegistry,
+  listener: Listener,
+  type: string,
+  options: ListenerOptions | undefined,
+): EventListener | undefined {
+  return registry.get(listener as object)?.get(wrapperKey(type, options));
+}
+
+function forgetWrapper(
+  registry: WrapperRegistry,
+  listener: Listener,
+  type: string,
+  options: ListenerOptions | undefined,
+): void {
+  registry.get(listener as object)?.delete(wrapperKey(type, options));
+}
+
+interface HookTarget {
+  addEventListener: (type: string, listener: Listener, options?: ListenerOptions) => void;
+  removeEventListener: (type: string, listener: Listener, options?: ListenerOptions) => void;
+}
+
+/**
+ * Swaps the target's add/remove pair for one that routes the named events through a wrapper.
+ * Everything else is passed through untouched, listener reference included, so unrelated page
+ * behaviour cannot be disturbed by the swap.
+ */
+function interceptListeners(
+  target: HookTarget,
+  blockedTypes: ReadonlySet<string>,
+  isBlocked: () => boolean,
+  undoList: Array<() => void>,
+): void {
+  const originalAdd = target.addEventListener;
+  const originalRemove = target.removeEventListener;
+  if (typeof originalAdd !== 'function') {
+    return;
+  }
+
+  const registry: WrapperRegistry = new WeakMap();
+
+  target.addEventListener = function (
+    this: unknown,
+    type: string,
+    listener: Listener,
+    options?: ListenerOptions,
+  ): void {
+    const effective = blockedTypes.has(type) && listener
+      ? resolveWrapper(registry, listener, type, options, isBlocked)
+      : listener;
+
+    if (typeof options === 'undefined') {
+      return originalAdd.call(this, type, effective);
+    }
+    return originalAdd.call(this, type, effective, options);
+  };
+  undoList.push(() => {
+    target.addEventListener = originalAdd;
+  });
+
+  if (typeof originalRemove !== 'function') {
+    return;
+  }
+
+  // Without this the page's own cleanup silently misses: it holds the listener it wrote, while
+  // the target holds the wrapper, and the listener would keep firing after removal.
+  target.removeEventListener = function (
+    this: unknown,
+    type: string,
+    listener: Listener,
+    options?: ListenerOptions,
+  ): void {
+    let effective = listener;
+    if (blockedTypes.has(type) && listener) {
+      const wrapper = findWrapper(registry, listener, type, options);
+      if (wrapper) {
+        effective = wrapper;
+        forgetWrapper(registry, listener, type, options);
+      }
+    }
+
+    if (typeof options === 'undefined') {
+      return originalRemove.call(this, type, effective);
+    }
+    return originalRemove.call(this, type, effective, options);
+  };
+  undoList.push(() => {
+    target.removeEventListener = originalRemove;
+  });
+}
 
 export function installVisibilityHook(
   win: Window,
@@ -121,55 +291,27 @@ export function installVisibilityHook(
     });
   }
 
-  // 4. Wrap win.addEventListener to defuse window-level tab switching events
-  const origWinAdd = win.addEventListener;
-  if (typeof origWinAdd === 'function') {
-    win.addEventListener = function (
-      this: Window,
-      type: string,
-      listener: EventListenerOrEventListenerObject,
-      options?: boolean | AddEventListenerOptions,
-    ): void {
-      if (isBlocked()) {
-        if (BLOCKED_WINDOW_EVENTS.has(type)) {
-          return;
-        }
-      }
-      if (typeof options === 'undefined') {
-        return origWinAdd.call(this, type, listener);
-      }
-      return origWinAdd.call(this, type, listener, options);
-    };
-    undoList.push(() => {
-      win.addEventListener = origWinAdd;
-    });
-  }
+  // 4. Neutralise window-level tab switching listeners at dispatch time
+  interceptListeners(
+    win as unknown as HookTarget,
+    BLOCKED_WINDOW_EVENTS,
+    isBlocked,
+    undoList,
+  );
 
-  // 5. Wrap doc.addEventListener to defuse document visibilitychange
+  // 5. Neutralise document visibilitychange listeners at dispatch time
   const origDocAdd = doc.addEventListener;
-  if (typeof origDocAdd === 'function') {
-    doc.addEventListener = function (
-      this: Document,
-      type: string,
-      listener: EventListenerOrEventListenerObject,
-      options?: boolean | AddEventListenerOptions,
-    ): void {
-      if (isBlocked()) {
-        if (BLOCKED_DOCUMENT_EVENTS.has(type)) {
-          return;
-        }
-      }
-      if (typeof options === 'undefined') {
-        return origDocAdd.call(this, type, listener);
-      }
-      return origDocAdd.call(this, type, listener, options);
-    };
-    undoList.push(() => {
-      doc.addEventListener = origDocAdd;
-    });
-  }
+  interceptListeners(
+    doc as unknown as HookTarget,
+    BLOCKED_DOCUMENT_EVENTS,
+    isBlocked,
+    undoList,
+  );
 
-  // 6. Deep defense: Stop immediate propagation during capture phase for visibilitychange
+  // 6. Deep defense: stop immediate propagation during capture phase for visibilitychange.
+  //    This is what covers listeners the page registered before the hook was installed, which
+  //    the wrapper above cannot reach. Registered through the original add so it does not
+  //    wrap itself.
   const captureStopper = function (event: Event): void {
     if (isBlocked()) {
       if (typeof event.stopImmediatePropagation === 'function') {

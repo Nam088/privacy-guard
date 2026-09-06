@@ -96,6 +96,18 @@ export const vi: TranslationDictionary = {
       label: 'Xem tin ẩn danh (Story)',
       description: 'Xem story mà không xuất hiện trong danh sách người xem',
     },
+    'instagram.bypassLinkShim': {
+      label: 'Bỏ qua chuyển hướng theo dõi (Link Shim)',
+      description: 'Mở trực tiếp liên kết bên ngoài mà không qua máy chủ theo dõi của Instagram',
+    },
+    'instagram.hideSuggestedPosts': {
+      label: 'Ẩn bài viết gợi ý',
+      description: 'Lọc sạch các bài viết thuật toán gợi ý khỏi bảng tin Instagram',
+    },
+    'instagram.hideReels': {
+      label: 'Ẩn Reels và video ngắn',
+      description: 'Ẩn hoàn toàn khay Reels và clip ngắn trên bảng tin Instagram',
+    },
     'global.stripFbclid': {
       label: 'Xóa mã theo dõi fbclid',
       description: 'Gỡ bỏ tham số định danh theo dõi fbclid khỏi các liên kết bạn bấm vào',

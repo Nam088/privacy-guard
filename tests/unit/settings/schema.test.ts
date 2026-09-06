@@ -134,15 +134,15 @@ describe('isFeatureOn', () => {
     expect(isFeatureOn(settings, 'global.blockMetaPixel')).toBe(false);
   });
 
-  it('returns false for a planned feature even when it is stored as enabled', () => {
+  it('returns false for an un-registered or planned feature even when it is stored as enabled', () => {
     const settings: Settings = {
       ...DEFAULT_SETTINGS,
       features: {
         ...DEFAULT_SETTINGS.features,
-        'instagram.hideReadReceipts': true,
+        'instagram.unimplementedFeature': true,
       },
     };
-    expect(isFeatureOn(settings, 'instagram.hideReadReceipts')).toBe(false);
+    expect(isFeatureOn(settings, 'instagram.unimplementedFeature')).toBe(false);
   });
 
   it('returns true for an active feature that is stored as enabled', () => {

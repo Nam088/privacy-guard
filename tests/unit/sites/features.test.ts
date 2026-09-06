@@ -61,7 +61,14 @@ describe.each(MODULES)('site module $id', (site) => {
         'scrambleDwellTime',
         'bypassLinkShim',
       ],
-      instagram: [],
+      instagram: [
+        'hideReadReceipts',
+        'hideTyping',
+        'hideStoryViews',
+        'bypassLinkShim',
+        'hideSuggestedPosts',
+        'hideReels',
+      ],
     };
 
     for (const feature of site.features) {

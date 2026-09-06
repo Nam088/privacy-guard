@@ -76,14 +76,27 @@ describe('Popup', () => {
   });
 
   it('badges every planned feature as Soon, so a disabled row does not read as broken', async () => {
-    mockedGetActiveSite.mockResolvedValue(instagram);
+    const siteWithPlanned = {
+      ...instagram,
+      features: [
+        ...instagram.features,
+        {
+          id: 'mockPlannedFeature',
+          label: 'Planned Feature',
+          description: 'A planned feature for testing',
+          defaultEnabled: false,
+          status: 'planned' as const,
+        },
+      ],
+    };
+    mockedGetActiveSite.mockResolvedValue(siteWithPlanned);
     render(<Popup />);
 
     await waitFor(() => {
       expect(screen.getByText('Instagram')).toBeTruthy();
     });
 
-    const planned = instagram.features.filter((feature) => feature.status === 'planned');
+    const planned = siteWithPlanned.features.filter((feature) => feature.status === 'planned');
 
     expect(screen.getAllByText('Soon')).toHaveLength(planned.length);
     // The badge marks what is not built. An active feature wearing it would be the same lie in

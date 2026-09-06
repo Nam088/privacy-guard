@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SITE_MODULES, findSiteForUrl } from '@/sites/registry';
+import { SITE_MODULES, findSiteForUrl, isMessagingSurface } from '@/sites/registry';
 
 describe('SITE_MODULES', () => {
   it('holds both modules shipping in v1', () => {
@@ -59,5 +59,47 @@ describe('findSiteForUrl', () => {
 
   it('is case insensitive about the host', () => {
     expect(findSiteForUrl('https://WWW.Facebook.COM/')?.id).toBe('facebook');
+  });
+});
+
+describe('isMessagingSurface', () => {
+  it('treats every messenger.com page as messaging', () => {
+    expect(isMessagingSurface('https://www.messenger.com/')).toBe(true);
+    expect(isMessagingSurface('https://www.messenger.com/t/1')).toBe(true);
+    expect(isMessagingSurface('https://messenger.com/e2ee/t/1')).toBe(true);
+  });
+
+  it('treats the Facebook inbox routes as messaging', () => {
+    expect(isMessagingSurface('https://www.facebook.com/messages')).toBe(true);
+    expect(isMessagingSurface('https://www.facebook.com/messages/t/1')).toBe(true);
+    expect(isMessagingSurface('https://www.facebook.com/messages/e2ee/t/1')).toBe(true);
+    expect(isMessagingSurface('https://m.facebook.com/messages/')).toBe(true);
+  });
+
+  it('treats Instagram direct routes as messaging', () => {
+    expect(isMessagingSurface('https://www.instagram.com/direct/inbox/')).toBe(true);
+    expect(isMessagingSurface('https://www.instagram.com/direct/t/1')).toBe(true);
+  });
+
+  it('leaves browsing surfaces alone', () => {
+    expect(isMessagingSurface('https://www.facebook.com/')).toBe(false);
+    expect(isMessagingSurface('https://www.facebook.com/watch')).toBe(false);
+    expect(isMessagingSurface('https://www.instagram.com/')).toBe(false);
+  });
+
+  // A route whose name merely starts with the same letters is not the inbox.
+  it('does not match a lookalike path segment', () => {
+    expect(isMessagingSurface('https://www.facebook.com/messagesomething')).toBe(false);
+    expect(isMessagingSurface('https://www.instagram.com/directory')).toBe(false);
+  });
+
+  it('is case insensitive on the host', () => {
+    expect(isMessagingSurface('https://WWW.Messenger.COM/t/1')).toBe(true);
+  });
+
+  it('says no for anything it cannot parse', () => {
+    expect(isMessagingSurface(undefined)).toBe(false);
+    expect(isMessagingSurface('')).toBe(false);
+    expect(isMessagingSurface('not a url')).toBe(false);
   });
 });

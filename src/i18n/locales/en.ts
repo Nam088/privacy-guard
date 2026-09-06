@@ -96,6 +96,18 @@ export const en: TranslationDictionary = {
       label: 'Hide story views',
       description: 'Watch stories without appearing in the viewer list',
     },
+    'instagram.bypassLinkShim': {
+      label: 'Bypass Link Shim tracking',
+      description: 'Open external links directly without routing through Instagram tracking redirect',
+    },
+    'instagram.hideSuggestedPosts': {
+      label: 'Hide suggested posts',
+      description: 'Filter out algorithmic suggested posts from your feed',
+    },
+    'instagram.hideReels': {
+      label: 'Hide Reels & short videos',
+      description: 'Hide Reels shelves and video carousels in your feed',
+    },
     'global.stripFbclid': {
       label: 'Strip fbclid from links',
       description: 'Remove tracking identifiers from links you click',

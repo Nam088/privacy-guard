@@ -1,6 +1,6 @@
 import { isFeatureOn, type Settings } from './settings/schema';
 import { FACEBOOK_SIGNATURES } from '@/sites/facebook/signatures';
-import { findSiteForUrl } from '@/sites/registry';
+import { findSiteForUrl, isMessagingSurface } from '@/sites/registry';
 import { featureKey } from '@/sites/types';
 
 /**
@@ -12,12 +12,14 @@ import { featureKey } from '@/sites/types';
  * suppressor that misreports what it did cannot be audited, and auditing it is the point.
  */
 export interface SuppressionConfig {
+  readonly siteId?: 'facebook' | 'instagram';
   readonly readReceiptLabels: readonly string[];
   readonly readReceiptPaths: readonly string[];
   readonly typingLabels: readonly string[];
   readonly typingPaths: readonly string[];
   readonly inboxWatermarkLabels: readonly string[];
   readonly inboxWatermarkPaths: readonly string[];
+  readonly hideReadReceipts?: boolean;
   readonly hideStoryViews?: boolean;
   readonly hideTyping?: boolean;
   readonly blockFeedAutoRefresh?: boolean;
@@ -43,15 +45,14 @@ const NOTHING: SuppressionConfig = {
 /**
  * Works out what the page observer should suppress on this page.
  *
- * Instagram is Meta on a different gateway host where no label has ever been observed, so it is
- * granted nothing here whatever its own feature list claims.
+ * Supports Facebook and Instagram with platform-specific signatures and rules.
  */
 export function buildSuppressionConfig(
   url: string | undefined,
   settings: Settings,
 ): SuppressionConfig {
   const site = findSiteForUrl(url);
-  if (site === null || site.id !== 'facebook') {
+  if (site === null || (site.id !== 'facebook' && site.id !== 'instagram')) {
     return NOTHING;
   }
 
@@ -71,23 +72,24 @@ export function buildSuppressionConfig(
 
   let readReceiptLabels: readonly string[] = [];
   let readReceiptPaths: readonly string[] = [];
-  if (isReadOn) {
-    readReceiptLabels = FACEBOOK_SIGNATURES.readReceiptLabels;
-    readReceiptPaths = FACEBOOK_SIGNATURES.readReceiptPaths;
-  }
-
   let typingLabels: readonly string[] = [];
   let typingPaths: readonly string[] = [];
-  if (isTypingOn) {
-    typingLabels = FACEBOOK_SIGNATURES.typingLabels;
-    typingPaths = FACEBOOK_SIGNATURES.typingPaths;
-  }
-
   let inboxWatermarkLabels: readonly string[] = [];
   let inboxWatermarkPaths: readonly string[] = [];
-  if (isInboxLastSeenOn) {
-    inboxWatermarkLabels = FACEBOOK_SIGNATURES.inboxWatermarkLabels;
-    inboxWatermarkPaths = FACEBOOK_SIGNATURES.inboxWatermarkPaths;
+
+  if (site.id === 'facebook') {
+    if (isReadOn) {
+      readReceiptLabels = FACEBOOK_SIGNATURES.readReceiptLabels;
+      readReceiptPaths = FACEBOOK_SIGNATURES.readReceiptPaths;
+    }
+    if (isTypingOn) {
+      typingLabels = FACEBOOK_SIGNATURES.typingLabels;
+      typingPaths = FACEBOOK_SIGNATURES.typingPaths;
+    }
+    if (isInboxLastSeenOn) {
+      inboxWatermarkLabels = FACEBOOK_SIGNATURES.inboxWatermarkLabels;
+      inboxWatermarkPaths = FACEBOOK_SIGNATURES.inboxWatermarkPaths;
+    }
   }
 
   const result: {
@@ -97,6 +99,7 @@ export function buildSuppressionConfig(
     typingPaths: readonly string[];
     inboxWatermarkLabels: readonly string[];
     inboxWatermarkPaths: readonly string[];
+    hideReadReceipts?: boolean;
     hideStoryViews?: boolean;
     hideTyping?: boolean;
     blockFeedAutoRefresh?: boolean;
@@ -117,13 +120,18 @@ export function buildSuppressionConfig(
     inboxWatermarkPaths,
   };
 
+  if (site.id === 'instagram' && isReadOn) {
+    result.hideReadReceipts = true;
+  }
   if (isStoryOn) {
     result.hideStoryViews = true;
   }
   if (isTypingOn) {
     result.hideTyping = true;
   }
-  if (isFeedReloadOn) {
+  // Held back on the inbox: there is no reading position to keep there, and a client told it
+  // never lost focus skips the reconnect and resync it runs on the way back to a visible tab.
+  if (isFeedReloadOn && !isMessagingSurface(url)) {
     result.blockFeedAutoRefresh = true;
   }
   if (isSponsoredPostsOn) {

@@ -39,13 +39,18 @@ function getFeatureIcon(key: string) {
     case 'facebook.hideSponsoredPosts':
       return <AdBlockIcon size={13} class="text-amber-500" />;
     case 'facebook.hideSuggestedPosts':
+    case 'instagram.hideSuggestedPosts':
       return <SparklesSlashIcon size={13} class="text-blue-500" />;
     case 'facebook.hideReels':
+    case 'instagram.hideReels':
       return <FilmSlashIcon size={13} class="text-purple-500" />;
     case 'facebook.blockFeedAutoRefresh':
       return <PauseReloadIcon size={13} class="text-emerald-500" />;
     case 'facebook.scrambleDwellTime':
       return <ClockStopIcon size={13} class="text-sky-500" />;
+    case 'facebook.bypassLinkShim':
+    case 'instagram.bypassLinkShim':
+      return <LinkSlashIcon size={13} class="text-amber-500" />;
     case 'facebook.hideReadReceipts':
     case 'instagram.hideReadReceipts':
       return <EyeOffIcon size={13} class="text-indigo-500" />;

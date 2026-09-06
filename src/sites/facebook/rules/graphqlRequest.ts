@@ -26,7 +26,7 @@ const NAME_KEYS = ['fb_api_req_friendly_name', 'operationName'];
  * The host check is the point. Without it any request whose path merely contained `/graphql/`
  * was inspected and could be dropped, third party analytics endpoints included.
  */
-export function parseGraphQLUrl(url: string): URL | null {
+export function parseGraphQLUrl(url: string, allowedSite?: string): URL | null {
   let parsed: URL;
   try {
     parsed = new URL(url, RELATIVE_BASE);
@@ -34,12 +34,24 @@ export function parseGraphQLUrl(url: string): URL | null {
     return null;
   }
 
-  if (findSiteForUrl(parsed.href)?.id !== 'facebook') {
+  const site = findSiteForUrl(parsed.href);
+  if (!site) {
+    return null;
+  }
+  if (allowedSite && site.id !== allowedSite) {
+    return null;
+  }
+  if (site.id !== 'facebook' && site.id !== 'instagram') {
     return null;
   }
 
   const pathname = parsed.pathname;
-  if (!GRAPHQL_PATHS.some((path) => pathname.includes(path))) {
+  const isGraph =
+    GRAPHQL_PATHS.some((path) => pathname.includes(path)) ||
+    pathname === '/api/graphql' ||
+    pathname === '/graphql';
+
+  if (!isGraph) {
     return null;
   }
 
