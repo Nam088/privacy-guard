@@ -115,12 +115,20 @@ export function attachLinkShimBypass(
   // Use capturing phase so we unwrap before Facebook's inline or bubbling click listeners
   const events = ['click', 'auxclick', 'mousedown', 'contextmenu'] as const;
   for (const ev of events) {
-    doc.addEventListener(ev, handler, true);
+    try {
+      doc.addEventListener(ev, handler, true);
+    } catch {
+      // Ignore
+    }
   }
 
   return () => {
     for (const ev of events) {
-      doc.removeEventListener(ev, handler, true);
+      try {
+        doc.removeEventListener(ev, handler, true);
+      } catch {
+        // Ignore
+      }
     }
   };
 }

@@ -9,6 +9,20 @@ export const vi: TranslationDictionary = {
     openSiteHint:
       'Mở Facebook, Messenger hoặc Instagram để điều khiển cho trang đó. Các cài đặt bên dưới áp dụng cho mọi trang web.',
     footerNotice: 'Chỉ hoạt động trên phiên của bạn. Privacy Guard không gửi dữ liệu đi bất cứ đâu.',
+    socialAssistant: 'Trợ lý bảo vệ mạng xã hội',
+    webAssistant: 'Trợ lý bảo vệ web',
+    activeProtectionSummary: (siteName: string) => `Đang bảo vệ riêng tư & lọc sạch trên ${siteName}.`,
+    standbySummary: 'Sẵn sàng kích hoạt tự động khi bạn mở Facebook hoặc Instagram.',
+    resumeHint: 'Gạt công tắc ở góc trên bên phải để bật lại bảo vệ.',
+    e2eeNotice: 'Đã trang bị lớp bảo vệ kép cho cả Messenger tiêu chuẩn & mã hóa E2EE (Armadillo).',
+  },
+  quickPresets: {
+    stealthTitle: 'Tàng hình 1 chạm',
+    stealthSubtitle: 'Chặn xem & gõ phím',
+    stealthTooltip: 'Bật tất cả tính năng tàng hình (chặn xem, gõ phím, story, online)',
+    cleanTitle: 'Lọc sạch 1 chạm',
+    cleanSubtitle: 'Ẩn tài trợ & reels',
+    cleanTooltip: 'Bật tất cả tính năng dọn dẹp bảng tin (tài trợ, gợi ý, reels)',
   },
   section: {
     allWebsites: 'Tất cả trang web',
@@ -20,11 +34,20 @@ export const vi: TranslationDictionary = {
     privacy: 'Riêng tư',
     global: 'Toàn web',
     all: 'Tất cả',
+    facebook: 'Facebook',
+    instagram: 'Instagram',
+  },
+  dashboard: {
+    totalActiveFeatures: (count: number) => `${count} tính năng đang bật`,
+    activeNow: 'Đang mở',
+    platformSubtitle: (name: string) => `Cấu hình bảo vệ riêng tư & lọc nội dung ${name}`,
+    globalDescription: 'Các lớp bảo vệ quyền riêng tư hoạt động trên mọi trang web bạn truy cập.',
   },
   common: {
     soon: 'Sắp ra mắt',
     auto: 'Tự động',
     activeCount: 'đang bật',
+    activeSite: 'Trang hiện tại',
   },
   site: {
     facebook: 'Facebook',

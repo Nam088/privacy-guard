@@ -287,7 +287,6 @@
       if (!match) return;
 
       var sig = match.category + '|' + channel + '|' + url.split('?')[0] + '|' + match.detail;
-      var isDuplicate = seenSignatures.has(sig);
       seenSignatures.add(sig);
 
       var record = {

@@ -20,32 +20,32 @@ export function Toggle({
   onChange,
 }: ToggleProps) {
   let containerClass =
-    'flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-surface-muted/60 transition-colors select-none';
+    'flex items-center gap-3 px-3.5 py-2.5 cursor-pointer hover:bg-surface-muted/60 transition-colors select-none';
   if (disabled) {
-    containerClass = 'flex items-center gap-2.5 px-3 py-2 cursor-not-allowed opacity-40 select-none';
+    containerClass = 'flex items-center gap-3 px-3.5 py-2.5 cursor-not-allowed opacity-45 select-none';
   }
 
   return (
     <label class={containerClass}>
       {icon && (
-        <div class="shrink-0 flex items-center justify-center w-6 h-6 rounded-md bg-surface-muted/90 border border-border/50">
+        <div class="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-surface-muted border border-border/60 shadow-2xs">
           {icon}
         </div>
       )}
 
-      <div class="min-w-0 flex-1 pr-1">
+      <div class="min-w-0 flex-1 pr-1.5">
         <div class="flex items-center gap-1.5">
-          <span class="text-[12px] font-semibold text-text leading-snug truncate">
+          <span class="text-[12.5px] font-semibold text-text leading-snug truncate">
             {label}
           </span>
           {badge && (
-            <span class="shrink-0 rounded border border-border bg-surface-muted px-1 text-[8.5px] font-bold tracking-wide text-text-muted uppercase">
+            <span class="shrink-0 rounded-md border border-border bg-surface-muted px-1.5 py-0.2 text-[9px] font-bold tracking-wide text-text-muted uppercase">
               {badge}
             </span>
           )}
         </div>
         {description && (
-          <p class="mt-0.5 text-[10.5px] leading-tight text-text-muted line-clamp-2">
+          <p class="mt-0.5 text-[11px] leading-snug text-text-muted line-clamp-2">
             {description}
           </p>
         )}

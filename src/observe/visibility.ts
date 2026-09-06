@@ -77,6 +77,9 @@ function resolveWrapper(
   options: ListenerOptions | undefined,
   isBlocked: () => boolean,
 ): EventListener {
+  if (typeof listener !== 'function' && (typeof listener !== 'object' || listener === null)) {
+    return listener as unknown as EventListener;
+  }
   const key = wrapperKey(type, options);
   let byKey = registry.get(listener as object);
   if (!byKey) {
@@ -90,10 +93,14 @@ function resolveWrapper(
   }
 
   const wrapper: EventListener = function (this: unknown, event: Event): void {
-    if (isBlocked()) {
-      return;
+    try {
+      if (isBlocked()) {
+        return;
+      }
+      callListener(listener, this, event);
+    } catch {
+      // Don't break host page event dispatch
     }
-    callListener(listener, this, event);
   };
   byKey.set(key, wrapper);
   return wrapper;
@@ -105,6 +112,9 @@ function findWrapper(
   type: string,
   options: ListenerOptions | undefined,
 ): EventListener | undefined {
+  if (typeof listener !== 'function' && (typeof listener !== 'object' || listener === null)) {
+    return undefined;
+  }
   return registry.get(listener as object)?.get(wrapperKey(type, options));
 }
 
@@ -114,6 +124,9 @@ function forgetWrapper(
   type: string,
   options: ListenerOptions | undefined,
 ): void {
+  if (typeof listener !== 'function' && (typeof listener !== 'object' || listener === null)) {
+    return;
+  }
   registry.get(listener as object)?.delete(wrapperKey(type, options));
 }
 
@@ -147,17 +160,46 @@ function interceptListeners(
     listener: Listener,
     options?: ListenerOptions,
   ): void {
-    const effective = blockedTypes.has(type) && listener
-      ? resolveWrapper(registry, listener, type, options, isBlocked)
-      : listener;
+    const receiver =
+      this && typeof (this as Record<string, unknown>).addEventListener === 'function'
+        ? (this as HookTarget)
+        : target;
 
-    if (typeof options === 'undefined') {
-      return originalAdd.call(this, type, effective);
+    let effective = listener;
+    if (
+      blockedTypes.has(type) &&
+      listener &&
+      (typeof listener === 'function' || typeof listener === 'object')
+    ) {
+      try {
+        effective = resolveWrapper(registry, listener, type, options, isBlocked);
+      } catch {
+        effective = listener;
+      }
     }
-    return originalAdd.call(this, type, effective, options);
+
+    try {
+      if (typeof options === 'undefined') {
+        return originalAdd.call(receiver, type, effective);
+      }
+      return originalAdd.call(receiver, type, effective, options);
+    } catch {
+      try {
+        if (typeof options === 'undefined') {
+          return originalAdd.call(target, type, listener);
+        }
+        return originalAdd.call(target, type, listener, options);
+      } catch {
+        // Safe fail-open: never crash host page
+      }
+    }
   };
   undoList.push(() => {
-    target.addEventListener = originalAdd;
+    try {
+      target.addEventListener = originalAdd;
+    } catch {
+      // Ignore
+    }
   });
 
   if (typeof originalRemove !== 'function') {
@@ -172,22 +214,50 @@ function interceptListeners(
     listener: Listener,
     options?: ListenerOptions,
   ): void {
+    const receiver =
+      this && typeof (this as Record<string, unknown>).removeEventListener === 'function'
+        ? (this as HookTarget)
+        : target;
+
     let effective = listener;
-    if (blockedTypes.has(type) && listener) {
-      const wrapper = findWrapper(registry, listener, type, options);
-      if (wrapper) {
-        effective = wrapper;
-        forgetWrapper(registry, listener, type, options);
+    if (
+      blockedTypes.has(type) &&
+      listener &&
+      (typeof listener === 'function' || typeof listener === 'object')
+    ) {
+      try {
+        const wrapper = findWrapper(registry, listener, type, options);
+        if (wrapper) {
+          effective = wrapper;
+          forgetWrapper(registry, listener, type, options);
+        }
+      } catch {
+        effective = listener;
       }
     }
 
-    if (typeof options === 'undefined') {
-      return originalRemove.call(this, type, effective);
+    try {
+      if (typeof options === 'undefined') {
+        return originalRemove.call(receiver, type, effective);
+      }
+      return originalRemove.call(receiver, type, effective, options);
+    } catch {
+      try {
+        if (typeof options === 'undefined') {
+          return originalRemove.call(target, type, listener);
+        }
+        return originalRemove.call(target, type, listener, options);
+      } catch {
+        // Safe fail-open
+      }
     }
-    return originalRemove.call(this, type, effective, options);
   };
   undoList.push(() => {
-    target.removeEventListener = originalRemove;
+    try {
+      target.removeEventListener = originalRemove;
+    } catch {
+      // Ignore
+    }
   });
 }
 

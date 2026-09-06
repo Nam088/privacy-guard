@@ -120,57 +120,61 @@ export default defineUnlistedScript(() => {
   };
 
   document.addEventListener(CONFIGURE_EVENT, (event) => {
-    const rawDetail = (event as CustomEvent<ObserverConfig | string>).detail;
-    let detail: ObserverConfig = {};
-    if (typeof rawDetail === 'string') {
-      try {
-        detail = JSON.parse(rawDetail) as ObserverConfig;
-      } catch {
-        detail = {};
+    try {
+      const rawDetail = (event as CustomEvent<ObserverConfig | string>).detail;
+      let detail: ObserverConfig = {};
+      if (typeof rawDetail === 'string') {
+        try {
+          detail = JSON.parse(rawDetail) as ObserverConfig;
+        } catch {
+          detail = {};
+        }
+      } else if (rawDetail && typeof rawDetail === 'object') {
+        detail = rawDetail;
       }
-    } else if (rawDetail && typeof rawDetail === 'object') {
-      detail = rawDetail;
-    }
-    capturing = Boolean(detail.capture);
-    storyViewsActive = Boolean(detail.hideStoryViews);
-    typingActive = Boolean(detail.hideTyping);
-    feedAutoRefreshActive = Boolean(detail.blockFeedAutoRefresh);
-    sponsoredPostsActive = Boolean(detail.hideSponsoredPosts);
-    suggestedPostsActive = Boolean(detail.hideSuggestedPosts);
-    reelsActive = Boolean(detail.hideReels);
-    onlineStatusHidden = Boolean(detail.hideOnlineStatus);
-    webRtcProtected = Boolean(detail.protectWebRtcIp);
-    voicePlayedActive = Boolean(detail.hideVoicePlayed);
-    dwellTimeScrambled = Boolean(detail.scrambleDwellTime);
-    linkShimBypassed = Boolean(detail.bypassLinkShim);
+      capturing = Boolean(detail.capture);
+      storyViewsActive = Boolean(detail.hideStoryViews);
+      typingActive = Boolean(detail.hideTyping);
+      feedAutoRefreshActive = Boolean(detail.blockFeedAutoRefresh);
+      sponsoredPostsActive = Boolean(detail.hideSponsoredPosts);
+      suggestedPostsActive = Boolean(detail.hideSuggestedPosts);
+      reelsActive = Boolean(detail.hideReels);
+      onlineStatusHidden = Boolean(detail.hideOnlineStatus);
+      webRtcProtected = Boolean(detail.protectWebRtcIp);
+      voicePlayedActive = Boolean(detail.hideVoicePlayed);
+      dwellTimeScrambled = Boolean(detail.scrambleDwellTime);
+      linkShimBypassed = Boolean(detail.bypassLinkShim);
 
-    const readReceiptLabels = detail.readReceiptLabels ?? [];
-    const typingLabels = detail.typingLabels ?? [];
-    const inboxWatermarkLabels = detail.inboxWatermarkLabels ?? [];
+      const readReceiptLabels = detail.readReceiptLabels ?? [];
+      const typingLabels = detail.typingLabels ?? [];
+      const inboxWatermarkLabels = detail.inboxWatermarkLabels ?? [];
 
-    readReceiptsActive = Boolean(detail.hideReadReceipts) || readReceiptLabels.length > 0;
+      readReceiptsActive = Boolean(detail.hideReadReceipts) || readReceiptLabels.length > 0;
 
-    const activeRules = [];
-    if (readReceiptLabels.length > 0) {
-      if (isInstagramSite) {
-        activeRules.push(new InstagramReadReceiptRule(readReceiptLabels, detail.readReceiptPaths));
-      } else {
-        activeRules.push(new FacebookReadReceiptRule(readReceiptLabels, detail.readReceiptPaths));
+      const activeRules = [];
+      if (readReceiptLabels.length > 0) {
+        if (isInstagramSite) {
+          activeRules.push(new InstagramReadReceiptRule(readReceiptLabels, detail.readReceiptPaths));
+        } else {
+          activeRules.push(new FacebookReadReceiptRule(readReceiptLabels, detail.readReceiptPaths));
+        }
       }
-    }
-    if (typingLabels.length > 0) {
-      if (isInstagramSite) {
-        activeRules.push(new InstagramTypingRule(typingLabels, detail.typingPaths));
-      } else {
-        activeRules.push(new FacebookTypingRule(typingLabels, detail.typingPaths));
+      if (typingLabels.length > 0) {
+        if (isInstagramSite) {
+          activeRules.push(new InstagramTypingRule(typingLabels, detail.typingPaths));
+        } else {
+          activeRules.push(new FacebookTypingRule(typingLabels, detail.typingPaths));
+        }
       }
+      if (inboxWatermarkLabels.length > 0) {
+        activeRules.push(
+          new FacebookInboxWatermarkRule(inboxWatermarkLabels, detail.inboxWatermarkPaths),
+        );
+      }
+      engine.updateRules(activeRules);
+    } catch {
+      // Safe fail-open
     }
-    if (inboxWatermarkLabels.length > 0) {
-      activeRules.push(
-        new FacebookInboxWatermarkRule(inboxWatermarkLabels, detail.inboxWatermarkPaths),
-      );
-    }
-    engine.updateRules(activeRules);
   });
 
   function intercept(url: string, data: unknown): SendVerdict | SendDecision {

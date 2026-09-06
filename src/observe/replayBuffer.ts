@@ -20,7 +20,7 @@ class ReadReplayManager {
   private originalSend: ((data: unknown) => void) | null = null;
 
   registerSocket(socket: WebSocket, originalSend: (data: unknown) => void): void {
-    if (socket.url.includes('/ws/lightspeed')) {
+    if (socket && typeof socket.url === 'string' && socket.url.includes('/ws/lightspeed')) {
       this.activeSocket = socket;
       this.originalSend = originalSend;
     }
@@ -78,23 +78,43 @@ export const readReplayManager = new ReadReplayManager();
 
 export function installReadReplayBridge(target: EventTarget): () => void {
   const handler = (event: Event) => {
-    const custom = event as CustomEvent<{ threadId?: string | number }>;
-    const threadId = custom.detail?.threadId;
-    readReplayManager.replay(threadId);
+    try {
+      const custom = event as CustomEvent<{ threadId?: string | number }>;
+      const threadId = custom.detail?.threadId;
+      readReplayManager.replay(threadId);
+    } catch {
+      // Safe fail-open
+    }
   };
 
-  target.addEventListener('privacy-guard:replay-read', handler);
+  try {
+    target.addEventListener('privacy-guard:replay-read', handler);
+  } catch {
+    // Target might not accept event listener
+  }
 
   // Expose global helper for console or popup script
   const scope = target as unknown as Record<string, unknown>;
   if (scope && typeof scope === 'object') {
-    scope.__pgReplayRead = (threadId?: string | number) => readReplayManager.replay(threadId);
+    try {
+      scope.__pgReplayRead = (threadId?: string | number) => readReplayManager.replay(threadId);
+    } catch {
+      // Ignore
+    }
   }
 
   return () => {
-    target.removeEventListener('privacy-guard:replay-read', handler);
+    try {
+      target.removeEventListener('privacy-guard:replay-read', handler);
+    } catch {
+      // Ignore
+    }
     if (scope && typeof scope === 'object') {
-      delete scope.__pgReplayRead;
+      try {
+        delete scope.__pgReplayRead;
+      } catch {
+        // Ignore
+      }
     }
   };
 }

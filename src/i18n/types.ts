@@ -14,6 +14,20 @@ export interface TranslationDictionary {
     readonly protection: string;
     readonly openSiteHint: string;
     readonly footerNotice: string;
+    readonly socialAssistant: string;
+    readonly webAssistant: string;
+    readonly activeProtectionSummary: (siteName: string) => string;
+    readonly standbySummary: string;
+    readonly resumeHint: string;
+    readonly e2eeNotice: string;
+  };
+  readonly quickPresets: {
+    readonly stealthTitle: string;
+    readonly stealthSubtitle: string;
+    readonly stealthTooltip: string;
+    readonly cleanTitle: string;
+    readonly cleanSubtitle: string;
+    readonly cleanTooltip: string;
   };
   readonly section: {
     readonly allWebsites: string;
@@ -25,11 +39,20 @@ export interface TranslationDictionary {
     readonly privacy: string;
     readonly global: string;
     readonly all: string;
+    readonly facebook: string;
+    readonly instagram: string;
+  };
+  readonly dashboard: {
+    readonly totalActiveFeatures: (count: number) => string;
+    readonly activeNow: string;
+    readonly platformSubtitle: (name: string) => string;
+    readonly globalDescription: string;
   };
   readonly common: {
     readonly soon: string;
     readonly auto: string;
     readonly activeCount: string;
+    readonly activeSite: string;
   };
   readonly site: {
     readonly facebook: string;

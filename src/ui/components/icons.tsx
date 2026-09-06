@@ -22,7 +22,7 @@ export function ShieldIcon({ class: className = '', size = 18 }: IconProps) {
   );
 }
 
-export function BrandLogo({ class: className = '', size = 20 }: IconProps) {
+export function BrandLogo({ class: className = '', size = 28 }: IconProps) {
   return (
     <svg
       width={size}
@@ -31,18 +31,19 @@ export function BrandLogo({ class: className = '', size = 20 }: IconProps) {
       fill="none"
       class={className}
     >
-      <path
-        d="M 256,48 C 336,48 420,78 436,98 C 446,110 448,132 448,164 C 448,284 376,396 256,454 C 136,396 64,284 64,164 C 64,132 66,110 76,98 C 92,78 176,48 256,48 Z"
-        fill="currentColor"
-      />
-      <path
-        d="M 168,252 L 232,316 L 344,196"
-        fill="none"
-        stroke="#FFFFFF"
-        strokeWidth="40"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <rect x="0" y="0" width="512" height="512" rx="128" fill="#2563EB" />
+      <path d="M 164,115 L 126,56" stroke="#FFFFFF" strokeWidth="26" strokeLinecap="round" />
+      <circle cx="114" cy="42" r="26" fill="#FFFFFF" />
+      <path d="M 348,115 L 386,56" stroke="#FFFFFF" strokeWidth="26" strokeLinecap="round" />
+      <circle cx="398" cy="42" r="26" fill="#FFFFFF" />
+      <rect x="36" y="200" width="34" height="110" rx="17" fill="#E2E8F0" />
+      <rect x="442" y="200" width="34" height="110" rx="17" fill="#E2E8F0" />
+      <rect x="58" y="112" width="396" height="300" rx="90" fill="#FFFFFF" />
+      <rect x="102" y="158" width="308" height="200" rx="56" fill="#1E40AF" />
+      <circle cx="190" cy="258" r="42" fill="#38BDF8" />
+      <circle cx="322" cy="258" r="42" fill="#38BDF8" />
+      <circle cx="178" cy="246" r="14" fill="#FFFFFF" />
+      <circle cx="310" cy="246" r="14" fill="#FFFFFF" />
     </svg>
   );
 }
@@ -365,3 +366,43 @@ export function ClockStopIcon({ class: className = '', size = 16 }: IconProps) {
     </svg>
   );
 }
+
+export function FacebookIcon({ class: className = '', size = 16 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      class={className}
+    >
+      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+    </svg>
+  );
+}
+
+export function InstagramIcon({ class: className = '', size = 16 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      class={className}
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+

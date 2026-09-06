@@ -9,6 +9,20 @@ export const en: TranslationDictionary = {
     openSiteHint:
       'Open Facebook, Messenger or Instagram to see the controls for that site. The settings below apply everywhere.',
     footerNotice: 'Works only on your own session. Privacy Guard sends no data anywhere.',
+    socialAssistant: 'Social Privacy Assistant',
+    webAssistant: 'Web Privacy Assistant',
+    activeProtectionSummary: (siteName: string) => `Active protection running on ${siteName}.`,
+    standbySummary: 'Standing by to protect when you open Facebook or Instagram.',
+    resumeHint: 'Toggle the switch in the top right to resume protection.',
+    e2eeNotice: 'Dual-layer protection active for both standard Messenger & E2EE chats (Armadillo).',
+  },
+  quickPresets: {
+    stealthTitle: '1-Tap Stealth',
+    stealthSubtitle: 'Seen & typing off',
+    stealthTooltip: 'Enable all stealth features (seen, typing, story, online)',
+    cleanTitle: '1-Tap Clean',
+    cleanSubtitle: 'No ads & reels',
+    cleanTooltip: 'Enable all clean feed features (sponsored, suggested, reels)',
   },
   section: {
     allWebsites: 'All websites',
@@ -20,11 +34,20 @@ export const en: TranslationDictionary = {
     privacy: 'Privacy',
     global: 'Global',
     all: 'All',
+    facebook: 'Facebook',
+    instagram: 'Instagram',
+  },
+  dashboard: {
+    totalActiveFeatures: (count: number) => `${count} active features`,
+    activeNow: 'Active now',
+    platformSubtitle: (name: string) => `Configure ${name} privacy & content filtering`,
+    globalDescription: 'Privacy protections that apply across all websites you visit.',
   },
   common: {
     soon: 'Soon',
     auto: 'Auto',
     activeCount: 'active',
+    activeSite: 'Active site',
   },
   site: {
     facebook: 'Facebook',

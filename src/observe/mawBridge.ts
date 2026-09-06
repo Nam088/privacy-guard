@@ -607,12 +607,20 @@ export function observeMawBridge(
       }
     };
     detachFocus = () => {
-      if (typeof scope.removeEventListener === 'function') {
-        scope.removeEventListener('focusin', onFocusIn);
+      try {
+        if (typeof scope.removeEventListener === 'function') {
+          scope.removeEventListener('focusin', onFocusIn);
+        }
+      } catch {
+        // Ignore
       }
     };
-    scope.addEventListener('focusin', onFocusIn, { passive: true });
-    undoList.push(detachFocus);
+    try {
+      scope.addEventListener('focusin', onFocusIn, { passive: true });
+      undoList.push(detachFocus);
+    } catch {
+      // Ignore
+    }
   }
 
   return () => {

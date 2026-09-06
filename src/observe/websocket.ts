@@ -61,13 +61,32 @@ export function observeWebSocket(
   const origOnMessageDesc = Object.getOwnPropertyDescriptor(Original.prototype, 'onmessage');
 
   function patchedSend(this: WebSocket, data: unknown): void {
-    readReplayManager.registerSocket(this, (d) => originalSend.call(this, d as never));
+    if (!this) {
+      return;
+    }
+
+    try {
+      if (typeof this.url === 'string') {
+        readReplayManager.registerSocket(this, (d) => {
+          try {
+            if (this.readyState !== 2 && this.readyState !== 3) {
+              originalSend.call(this, d as never);
+            }
+          } catch {
+            // Ignore
+          }
+        });
+      }
+    } catch {
+      // Non-standard socket
+    }
 
     let verdict: SendVerdict = 'pass';
     let dataToSend = data;
 
     try {
-      const decision = intercept?.(this.url, data);
+      const url = typeof this.url === 'string' ? this.url : '';
+      const decision = intercept?.(url, data);
       if (typeof decision === 'string') {
         verdict = decision;
       } else if (decision && typeof decision === 'object') {
@@ -87,18 +106,26 @@ export function observeWebSocket(
           : verdict === 'mixed'
             ? 'websocket.mixed'
             : 'websocket.send';
-      const event = newEvent(kind, this.url, frameUrl);
+      const event = newEvent(kind, this.url || '', frameUrl);
       event.value = describeValue(dataToSend);
       return event;
     }, dataToSend);
 
     if (verdict === 'drop') {
-      if (this.url.includes('/ws/lightspeed')) {
+      if (typeof this.url === 'string' && this.url.includes('/ws/lightspeed')) {
         readReplayManager.cacheSuppressedReceipt(this.url, data);
       }
       return;
     }
-    return originalSend.call(this, dataToSend as never);
+
+    try {
+      if (this.readyState === 2 || this.readyState === 3) {
+        return;
+      }
+      return originalSend.call(this, dataToSend as never);
+    } catch {
+      // Prevent unhandled DOMException when socket is closing/closed during stream teardown
+    }
   }
 
   Original.prototype.send = patchedSend as typeof originalSend;
@@ -113,7 +140,11 @@ export function observeWebSocket(
       options?: boolean | AddEventListenerOptions,
     ): void {
       if (type !== 'message' || typeof listener !== 'function') {
-        return originalAddEventListener.call(this, type, listener as never, options);
+        try {
+          return originalAddEventListener.call(this, type, listener as never, options);
+        } catch {
+          return;
+        }
       }
 
       const originalListener = listener as EventListener;
@@ -131,7 +162,15 @@ export function observeWebSocket(
       };
 
       wrappedListeners.set(originalListener, wrapped);
-      return originalAddEventListener.call(this, type, wrapped, options);
+      try {
+        return originalAddEventListener.call(this, type, wrapped, options);
+      } catch {
+        try {
+          return originalAddEventListener.call(this, type, listener as never, options);
+        } catch {
+          return;
+        }
+      }
     } as typeof originalAddEventListener;
   }
 
@@ -146,10 +185,18 @@ export function observeWebSocket(
         const wrapped = wrappedListeners.get(listener);
         if (wrapped) {
           wrappedListeners.delete(listener);
-          return originalRemoveEventListener.call(this, type, wrapped, options);
+          try {
+            return originalRemoveEventListener.call(this, type, wrapped, options);
+          } catch {
+            return;
+          }
         }
       }
-      return originalRemoveEventListener.call(this, type, listener as never, options);
+      try {
+        return originalRemoveEventListener.call(this, type, listener as never, options);
+      } catch {
+        return;
+      }
     } as typeof originalRemoveEventListener;
   }
 

@@ -38,33 +38,44 @@ describe('Popup', () => {
     settings.value = DEFAULT_SETTINGS;
   });
 
-  it('shows the global section on an unsupported site', async () => {
+  it('shows centralized platform tabs on any site', async () => {
     mockedGetActiveSite.mockResolvedValue(null);
     render(<Popup />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Open Facebook, Messenger or Instagram/)).toBeTruthy();
+      expect(screen.getByText('Privacy Guard')).toBeTruthy();
     });
-    expect(screen.getByText('All websites')).toBeTruthy();
-    expect(screen.queryByText('Facebook')).toBeNull();
+    expect(screen.getByRole('button', { name: /Facebook/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Instagram/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Global/ })).toBeTruthy();
   });
 
-  it('shows the site section when a supported site is active', async () => {
+  it('automatically focuses Facebook tab when Facebook is the active site', async () => {
     mockedGetActiveSite.mockResolvedValue(facebook);
     render(<Popup />);
 
     await waitFor(() => {
-      expect(screen.getByText('Facebook')).toBeTruthy();
+      expect(screen.getByText('Configure Facebook privacy & content filtering')).toBeTruthy();
     });
-    expect(screen.queryByText(/Open Facebook, Messenger or Instagram/)).toBeNull();
+    expect(screen.getByText('Hide read receipts')).toBeTruthy();
   });
 
-  it('disables exactly the planned features, so the popup never claims protection it lacks', async () => {
+  it('automatically focuses Instagram tab when Instagram is the active site', async () => {
+    mockedGetActiveSite.mockResolvedValue(instagram);
+    render(<Popup />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Configure Instagram privacy & content filtering')).toBeTruthy();
+    });
+    expect(screen.getByText('Hide story views')).toBeTruthy();
+  });
+
+  it('disables exactly the planned features on Facebook', async () => {
     mockedGetActiveSite.mockResolvedValue(facebook);
     render(<Popup />);
 
     await waitFor(() => {
-      expect(screen.getByText('Facebook')).toBeTruthy();
+      expect(screen.getByText('Hide read receipts')).toBeTruthy();
     });
 
     for (const feature of facebook.features) {
@@ -86,6 +97,7 @@ describe('Popup', () => {
           description: 'A planned feature for testing',
           defaultEnabled: false,
           status: 'planned' as const,
+          category: 'privacy' as const,
         },
       ],
     };
@@ -93,23 +105,26 @@ describe('Popup', () => {
     render(<Popup />);
 
     await waitFor(() => {
-      expect(screen.getByText('Instagram')).toBeTruthy();
+      expect(screen.getByText('Planned Feature')).toBeTruthy();
     });
 
     const planned = siteWithPlanned.features.filter((feature) => feature.status === 'planned');
-
     expect(screen.getAllByText('Soon')).toHaveLength(planned.length);
-    // The badge marks what is not built. An active feature wearing it would be the same lie in
-    // the other direction.
     expect(planned.length).toBeGreaterThan(0);
   });
 
-  it('leaves the active global features usable', async () => {
+  it('leaves the active global features usable when switching to Global tab', async () => {
     mockedGetActiveSite.mockResolvedValue(null);
     render(<Popup />);
 
     await waitFor(() => {
-      expect(screen.getByText('All websites')).toBeTruthy();
+      expect(screen.getByRole('button', { name: /Global/ })).toBeTruthy();
+    });
+
+    screen.getByRole('button', { name: /Global/ }).click();
+
+    await waitFor(() => {
+      expect(screen.getByText('Block Meta Pixel')).toBeTruthy();
     });
 
     const row = screen.getByText('Block Meta Pixel').closest('label');
@@ -150,13 +165,14 @@ describe('Popup', () => {
     const { settings } = await import('@/core/settings/store');
     render(<Popup />);
 
-    // Wait for the store to finish loading before interacting. A prior test may have left
-    // the module level `settings` signal at `masterEnabled: false`; until `initSettingsStore`'s
-    // read resolves and restores the default, every toggle renders disabled and a click is a
-    // no-op, which would make this assertion pass for the wrong reason.
     await waitFor(() => {
       expect(isReady.value).toBe(true);
     });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Global/ })).toBeTruthy();
+    });
+    screen.getByRole('button', { name: /Global/ }).click();
+
     await waitFor(() => {
       expect(screen.getByText('Strip fbclid from links')).toBeTruthy();
     });
@@ -181,6 +197,11 @@ describe('Popup', () => {
       expect(isReady.value).toBe(true);
     });
     await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Global/ })).toBeTruthy();
+    });
+    screen.getByRole('button', { name: /Global/ }).click();
+
+    await waitFor(() => {
       expect(screen.getByText('Strip fbclid from links')).toBeTruthy();
     });
 
@@ -201,6 +222,11 @@ describe('Popup', () => {
     await waitFor(() => {
       expect(isReady.value).toBe(true);
     });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Global/ })).toBeTruthy();
+    });
+    screen.getByRole('button', { name: /Global/ }).click();
+
     await waitFor(() => {
       expect(screen.getByText('Block Meta Pixel')).toBeTruthy();
     });
