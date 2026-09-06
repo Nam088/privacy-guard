@@ -48,13 +48,12 @@ describe('InstagramTypingRule', () => {
     });
   });
 
-  it('drops unified Meta LightSpeed GraphQL typing mutations', () => {
+  it('drops Instagram GraphQL typing mutations', () => {
     for (const mutation of [
-      'useTypingIndicatorMutation',
-      'LSPlatformTypingMutation',
-      'TypingMutation',
-      'ThreadTypingIndicatorMutation',
-      'CometTypingMutation',
+      'PolarisDirectActivityStatusMutation',
+      'PolarisDirectThreadActivityIndicatorMutation',
+      'useDirectActivityStatusMutation',
+      'direct_activity_status_indication',
     ]) {
       const url = 'https://www.instagram.com/api/graphql';
       const body = JSON.stringify({
@@ -66,16 +65,25 @@ describe('InstagramTypingRule', () => {
     }
   });
 
-  it('drops PolarisDirectActivityStatusMutation GraphQL typing mutations', () => {
-    const url = 'https://www.instagram.com/api/graphql';
-    const body = JSON.stringify({
-      fb_api_req_friendly_name: 'PolarisDirectActivityStatusMutation',
-      variables: { thread_id: '123' },
-    });
-    const verdict = rule.evaluateHttp(url, body);
+  it('drops MQTT bypass indicate_activity frames when activity_status=1', () => {
+    const raw = new TextEncoder().encode(
+      JSON.stringify({ action: 'indicate_activity', activity_status: 1, thread_id: '123' }),
+    );
+    const context = new LazyInterceptContext('wss://gateway.instagram.com/ws/mqttbypass', raw);
+    const verdict = rule.evaluate(context);
 
     expect(verdict?.action).toBe('drop');
-    expect(verdict?.reason).toBe('instagram-graphql-typing');
+    expect(verdict?.reason).toBe('instagram-realtime-typing');
+  });
+
+  it('allows MQTT bypass indicate_activity frames when activity_status=0 to clear typing', () => {
+    const raw = new TextEncoder().encode(
+      JSON.stringify({ action: 'indicate_activity', activity_status: 0, thread_id: '123' }),
+    );
+    const context = new LazyInterceptContext('wss://gateway.instagram.com/ws/mqttbypass', raw);
+    const verdict = rule.evaluate(context);
+
+    expect(verdict).toBeNull();
   });
 
   it('drops REST typing activity indications with activity_status=1', () => {

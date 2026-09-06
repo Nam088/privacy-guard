@@ -21,7 +21,6 @@ export const STORY_SEEN_MUTATIONS = [
   'StoriesReaderSeenMutation',
   'StoriesUpdateSeenStateMutation',
   'useStoriesSeenMutation',
-  'PolarisStoriesV3SeenMutation',
 ] as const;
 
 /**
@@ -32,7 +31,7 @@ export const STORY_SEEN_MUTATIONS = [
  * feed payload and drop it.
  */
 export const STORY_SEEN_PATTERN =
-  /stor(y|ies).{0,20}seen|seen.{0,20}stor(y|ies)|polarisstoriesv3seen/i;
+  /stor(y|ies).{0,20}seen|seen.{0,20}stor(y|ies)/i;
 
 function isStorySeenOperation(name: string): boolean {
   if (STORY_SEEN_PATTERN.test(name)) {

@@ -43,18 +43,18 @@ describe('FacebookStoryViewsRule', () => {
     });
   });
 
-  it('drops CometStoriesSeenMutation and PolarisStoriesV3SeenMutation', () => {
+  it('drops CometStoriesSeenMutation and StoriesUpdateSeenStateMutation', () => {
     const cometVerdict = rule.evaluateHttp(
       'https://www.facebook.com/api/graphql/',
       'fb_api_req_friendly_name=CometStoriesSeenMutation',
     );
     expect(cometVerdict?.action).toBe('drop');
 
-    const polarisVerdict = rule.evaluateHttp(
+    const updateVerdict = rule.evaluateHttp(
       'https://www.facebook.com/api/graphql/',
-      'fb_api_req_friendly_name=PolarisStoriesV3SeenMutation',
+      'fb_api_req_friendly_name=StoriesUpdateSeenStateMutation',
     );
-    expect(polarisVerdict?.action).toBe('drop');
+    expect(updateVerdict?.action).toBe('drop');
   });
 
   it('drops StoriesSeenTrayItemMutation requests', () => {

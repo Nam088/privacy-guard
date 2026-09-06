@@ -65,17 +65,20 @@ export class InstagramTypingRule implements SuppressionRule, HttpSuppressionRule
           if (
             text.includes('"activity_status":"0"') ||
             text.includes('"activity_status":0') ||
+            text.includes('"activity_status": 0') ||
             text.includes('"is_typing":0') ||
-            text.includes('"is_typing":"0"')
+            text.includes('"is_typing":"0"') ||
+            text.includes('"is_typing": 0')
           ) {
             return null;
           }
 
           if (
+            text.includes('indicate_activity') ||
             text.includes('activity_status_indication') ||
             text.includes('typing_indicator') ||
-            (text.includes('"activity_status"') && text.includes('"1"')) ||
-            (text.includes('"is_typing"') && (text.includes('"1"') || text.includes(':1')))
+            (text.includes('"activity_status"') && (text.includes('"1"') || text.includes(':1') || text.includes(': 1'))) ||
+            (text.includes('"is_typing"') && (text.includes('"1"') || text.includes(':1') || text.includes(': 1')))
           ) {
             return {
               action: 'drop',

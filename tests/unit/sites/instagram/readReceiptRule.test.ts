@@ -75,12 +75,12 @@ describe('InstagramReadReceiptRule', () => {
     expect(verdict?.reason).toBe('instagram-realtime-read-receipt');
   });
 
-  it('drops unified Meta LightSpeed GraphQL read receipt mutations', () => {
+  it('drops Instagram GraphQL read receipt mutations', () => {
     for (const mutation of [
-      'useReadReceiptMutation',
-      'MarkThreadReadMutation',
-      'LSPlatformWatermarkMutation',
-      'ThreadMarkReadMutation',
+      'useIGDMarkThreadAsReadMutation',
+      'useIGDMarkThreadAsReadValidationMutation',
+      'IGDMarkThreadAsReadMutation',
+      'IGDMarkThreadAsReadValidationMutation',
     ]) {
       const url = 'https://www.instagram.com/api/graphql';
       const body = JSON.stringify({
@@ -130,9 +130,9 @@ describe('InstagramReadReceiptRule', () => {
   });
 
   it('drops Worker/MessagePort read receipt actions', () => {
-    expect(rule.evaluateWorker({ action: 'send_read_receipt' })).toBe('drop');
-    expect(rule.evaluateWorker({ type: 'mark_read' })).toBe('drop');
-    expect(rule.evaluateWorker({ command: 'updatewatermark' })).toBe('drop');
+    expect(rule.evaluateWorker({ action: 'mark_thread_as_read' })).toBe('drop');
+    expect(rule.evaluateWorker({ type: 'mark_thread_read' })).toBe('drop');
+    expect(rule.evaluateWorker({ command: 'last_read_watermark_ts' })).toBe('drop');
     expect(rule.evaluateWorker({ action: 'send_message' })).toBe('pass');
   });
 });

@@ -176,3 +176,27 @@ proof of protection, and the report says so in place of implying otherwise.
 Until the bridge reports through the observation bridge like every other channel, the only way to
 settle it is the A/B: turn Hide typing off, type, ask the other account; turn it on, type, ask
 again. The difference is the evidence.
+
+## `instagram-auto-detector.js`
+
+**Zero-friction automatic detector for live `instagram.com` sessions.**
+
+No UI overlay, no screen blockage, and no manual step-by-step commands needed.
+
+Hooks all outbound network channels:
+- `fetch`
+- `XMLHttpRequest`
+- `WebSocket.prototype.send`
+- `navigator.sendBeacon`
+- `Worker.prototype.postMessage`
+- `MessagePort.prototype.postMessage`
+
+### Running it
+
+1. Open `https://www.instagram.com` in your browser.
+2. Open DevTools (F12) -> Console. Ensure context is `top`.
+3. Paste the contents of `tools/probes/instagram-auto-detector.js` and press Enter.
+4. Interact normally on Instagram (open Direct messages, type in chat, view stories, click links).
+5. All detected requests are automatically categorized and logged in real time directly to the DevTools Console.
+6. Run `__igDetector.getSignatures()` to inspect the aggregated report, or `__igDetector.stop()` to restore all globals.
+

@@ -55,7 +55,6 @@ export const FACEBOOK_SIGNATURES = {
     'ThreadTypingIndicatorMutation',
     'CometTypingMutation',
   ] as readonly string[],
-  presenceStreamPaths: ['/ws/streamcontroller'] as readonly string[],
   voiceMemoMutations: [
     'AudioClipPlayedMutation',
     'useAudioClipPlayedMutation',

@@ -47,6 +47,7 @@ export default tseslint.config(
         XMLHttpRequest: 'readonly',
         console: 'readonly',
         navigator: 'readonly',
+        window: 'readonly',
       },
     },
   },

@@ -13,7 +13,7 @@ import {
 } from '../../facebook/rules/graphqlRequest';
 
 const DIRECT_SEEN_REGEX =
-  /readreceipt|markthreadread|mercurythreadmarkread|threadmarkread|readwatermark|direct.*seen|seen.*direct|mark.*thread.*seen/i;
+  /readreceipt|markthreadread|mark.*thread.*as.*read|igdmarkthreadasread|mercurythreadmarkread|threadmarkread|readwatermark|direct.*seen|seen.*direct|mark.*thread.*seen/i;
 
 function isInstagramReadReceiptOperation(name: string): boolean {
   if (DIRECT_SEEN_REGEX.test(name)) {
