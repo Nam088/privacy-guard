@@ -1,0 +1,28 @@
+<svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- Full-bleed Modern Squircle Base -->
+  <rect x="0" y="0" width="512" height="512" rx="128" fill="#2563EB" />
+  
+  <!-- Antennas Left & Right -->
+  <path d="M 164,115 L 126,56" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" />
+  <circle cx="114" cy="42" r="26" fill="#FFFFFF" />
+  <path d="M 348,115 L 386,56" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" />
+  <circle cx="398" cy="42" r="26" fill="#FFFFFF" />
+  
+  <!-- Ear Caps / Side Modules -->
+  <rect x="36" y="200" width="34" height="110" rx="17" fill="#E2E8F0" />
+  <rect x="442" y="200" width="34" height="110" rx="17" fill="#E2E8F0" />
+
+  <!-- Robot Head Main Body (Solid White, Fills Canvas) -->
+  <rect x="58" y="112" width="396" height="300" rx="90" fill="#FFFFFF" />
+  
+  <!-- Face Screen (Deep Space Blue) -->
+  <rect x="102" y="158" width="308" height="200" rx="56" fill="#1E40AF" />
+  
+  <!-- Big Friendly Glowing Eyes -->
+  <circle cx="190" cy="258" r="42" fill="#38BDF8" />
+  <circle cx="322" cy="258" r="42" fill="#38BDF8" />
+  
+  <!-- Eye Sparkle Highlights -->
+  <circle cx="178" cy="246" r="14" fill="#FFFFFF" />
+  <circle cx="310" cy="246" r="14" fill="#FFFFFF" />
+</svg>

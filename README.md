@@ -21,10 +21,19 @@
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT License" />
 </p>
 
+<p align="center">
+  <img src="assets/preview-facebook.png" width="31%" alt="Facebook Privacy Protection" />
+  &nbsp;
+  <img src="assets/preview-instagram.png" width="31%" alt="Instagram Privacy Protection" />
+  &nbsp;
+  <img src="assets/preview-global.png" width="31%" alt="Global Anti-Tracking" />
+</p>
+
 ---
 
 ## 🌐 Table of Contents / Mục lục
 
+- [App Preview](#-app-preview)
 - [Why Privacy Guard?](#-why-privacy-guard)
 - [Architecture & Protocol Interception](#-architecture--protocol-interception)
 - [Feature Matrix](#-feature-matrix)
@@ -35,6 +44,17 @@
   - [Global Network Defense](#4-global-network-defense)
 - [Tài Liệu Tiếng Việt](#-tài-liệu-tiếng-việt)
 - [Development & Verification](#-development--verification)
+- [Contributing](#-contributing)
+- [Security](#-security)
+- [License](#-license)
+
+---
+
+## 📸 App Preview
+
+| Facebook Protection | Instagram Protection | Global Anti-Tracking |
+| :---: | :---: | :---: |
+| <img src="assets/preview-facebook.png" width="100%" alt="Facebook Panel" /> | <img src="assets/preview-instagram.png" width="100%" alt="Instagram Panel" /> | <img src="assets/preview-global.png" width="100%" alt="Global Panel" /> |
 
 ---
 
@@ -226,7 +246,20 @@ pnpm test       # Vitest unit test suite (57 test suites, 570+ assertions)
 
 ---
 
+## 🤝 Contributing
+
+We warmly welcome contributions from the open-source and privacy community! Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CONTRIBUTING.md#principles--code-of-conduct) before opening an issue or Pull Request.
+
+---
+
+## 🔒 Security Policy
+
+For security vulnerability disclosures or reporting privacy leaks, please consult our [Security Policy](SECURITY.md).
+
+---
+
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
 Privacy Guard is an independent research project and is not affiliated with, endorsed by, or associated with Meta Platforms, Inc.
+
