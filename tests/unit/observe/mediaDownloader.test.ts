@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearCapturedVideos,
+  extractStoryTargetId,
   extractTargetVideoId,
   getCapturedVideo,
   installMediaDownloader,
@@ -361,6 +362,139 @@ describe('mediaDownloader', () => {
 
       const res = resolveMediaSource(reel999Card);
       // Must NOT return reel0.mp4!
+      expect(res).toBeNull();
+    });
+  });
+
+  describe('stories navigation & resolution', () => {
+    describe('extractStoryTargetId', () => {
+      it('extracts numeric story ID from Instagram story path', () => {
+        const id = extractStoryTargetId('/stories/taylorswift/3456789012345678901/');
+        expect(id).toBe('3456789012345678901');
+      });
+
+      it('extracts base64-encoded story ID from Facebook story path', () => {
+        // UzpfSVNDOjEwODg5Mzc3MTAxNjk4NzE= decodes to S:_ISC:1088937710169871
+        const id = extractStoryTargetId('/stories/1693209027396561/UzpfSVNDOjEwODg5Mzc3MTAxNjk4NzE=/');
+        expect(id).toBe('1088937710169871');
+      });
+
+      it('extracts raw numeric story ID from Facebook story path', () => {
+        const id = extractStoryTargetId('/stories/1693209027396561/1088937710169871/');
+        expect(id).toBe('1088937710169871');
+      });
+
+      it('returns undefined for non-story paths', () => {
+        expect(extractStoryTargetId('/messages/t/123')).toBeUndefined();
+      });
+    });
+
+    it('resolves photo story as image (never stale video) even when old video scripts exist on page', () => {
+      // Historical video script from a previously watched video story
+      const oldVideoScript = document.createElement('script');
+      oldVideoScript.type = 'application/json';
+      const oldVideoEfg = btoa(JSON.stringify({ video_id: 1111111111111111, bitrate: 1500000 }));
+      oldVideoScript.text = `<BaseURL>https://scontent.fbcdn.net/old_story_video.mp4?efg=${oldVideoEfg}</BaseURL>`;
+      document.body.appendChild(oldVideoScript);
+
+      // Current page is a story page
+      window.history.replaceState({}, '', '/stories/1693209027396561/UzpfSVNDOjEwODg5Mzc3MTAxNjk4NzE=/');
+
+      // Container has an image story (no video element)
+      const storyContainer = document.createElement('div');
+      storyContainer.className = 'x5yr21d';
+      const img = document.createElement('img');
+      img.src = 'https://scontent.fdad1-1.fna.fbcdn.net/v/t39.30808-6/current_story_photo.jpg';
+      Object.defineProperty(img, 'naturalWidth', { value: 1080 });
+      Object.defineProperty(img, 'naturalHeight', { value: 1920 });
+      storyContainer.appendChild(img);
+      document.body.appendChild(storyContainer);
+
+      const res = resolveMediaSource(storyContainer);
+      expect(res).not.toBeNull();
+      expect(res?.isVideo).toBe(false);
+      expect(res?.url).toBe('https://scontent.fdad1-1.fna.fbcdn.net/v/t39.30808-6/current_story_photo.jpg');
+      expect(res?.url).not.toContain('old_story_video.mp4');
+    });
+
+    it('resolves correct sequential video story and does NOT get stuck on previous story of same author', () => {
+      const bucketId = '1693209027396561';
+      const story1Token = 'UzpfSVNDOjEwODg5Mzc3MTAxNjk4NzE='; // id: 1088937710169871
+      const story2Token = 'UzpfSVNDOjIwOTk4NDg4MjEyODAxODIv'; // id: 2099848821280182
+
+      // Script 1 containing Story 1 video
+      const script1 = document.createElement('script');
+      script1.type = 'application/json';
+      const story1Efg = btoa(JSON.stringify({ video_id: 1088937710169871, bitrate: 2000000 }));
+      script1.text = `{"story_card_id":"${story1Token}","bucket_id":"${bucketId}"}<BaseURL>https://scontent.fbcdn.net/story1.mp4?efg=${story1Efg}</BaseURL>`;
+      document.body.appendChild(script1);
+
+      // Script 2 containing Story 2 video
+      const script2 = document.createElement('script');
+      script2.type = 'application/json';
+      const story2Efg = btoa(JSON.stringify({ video_id: 2099848821280182, bitrate: 2500000 }));
+      script2.text = `{"story_card_id":"${story2Token}","bucket_id":"${bucketId}"}<BaseURL>https://scontent.fbcdn.net/story2.mp4?efg=${story2Efg}</BaseURL>`;
+      document.body.appendChild(script2);
+
+      // User navigates to Story 2
+      window.history.replaceState({}, '', `/stories/${bucketId}/${story2Token}/`);
+
+      const story2Container = document.createElement('div');
+      story2Container.className = 'x5yr21d';
+      const video2 = document.createElement('video');
+      video2.src = 'blob:https://web.facebook.com/story2-blob';
+      story2Container.appendChild(video2);
+      document.body.appendChild(story2Container);
+
+      const res = resolveMediaSource(story2Container);
+      expect(res).not.toBeNull();
+      expect(res?.isVideo).toBe(true);
+      expect(res?.url).toContain('story2.mp4');
+      expect(res?.url).not.toContain('story1.mp4');
+    });
+
+    it('does NOT fallback to Story 1 or Story 2 when Story 3 is not available in scripts', () => {
+      const bucketId = '1693209027396561';
+      const story1Token = 'UzpfSVNDOjEwODg5Mzc3MTAxNjk4NzE=';
+
+      const script1 = document.createElement('script');
+      script1.type = 'application/json';
+      const story1Efg = btoa(JSON.stringify({ video_id: 1088937710169871, bitrate: 2000000 }));
+      script1.text = `{"story_card_id":"${story1Token}","bucket_id":"${bucketId}"}<BaseURL>https://scontent.fbcdn.net/story1.mp4?efg=${story1Efg}</BaseURL>`;
+      document.body.appendChild(script1);
+
+      // User navigates to Story 3 which has token not in scripts
+      const story3Token = 'UzpfSVNDOjMzMzMzMzMzMzMzMzMzMzM='; // id: 3333333333333333
+      window.history.replaceState({}, '', `/stories/${bucketId}/${story3Token}/`);
+
+      const story3Container = document.createElement('div');
+      const video3 = document.createElement('video');
+      video3.src = 'blob:https://web.facebook.com/story3-blob';
+      story3Container.appendChild(video3);
+      document.body.appendChild(story3Container);
+
+      const res = resolveMediaSource(story3Container);
+      // Must NOT fallback to story1.mp4!
+      expect(res).toBeNull();
+    });
+
+    it('does not pick unmatching performance entries on story pages', () => {
+      window.history.replaceState({}, '', '/stories/taylorswift/3456789012345678901/');
+
+      // Performance entry from an older cached video (e.g. ad or previous story)
+      vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+        {
+          name: 'https://instagram.fbcdn.net/o1/v/stale_video.mp4?bytestart=0&byteend=100',
+        } as PerformanceResourceTiming,
+      ]);
+
+      const container = document.createElement('div');
+      const video = document.createElement('video');
+      video.src = 'blob:https://www.instagram.com/story-blob';
+      container.appendChild(video);
+      document.body.appendChild(container);
+
+      const res = resolveMediaSource(container);
       expect(res).toBeNull();
     });
   });

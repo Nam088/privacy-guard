@@ -60,7 +60,10 @@ export function installObservers(
   );
 
   const onNetworkResponse = (url: string, text: string) => {
-    if (options.isMediaDownloaderActive?.() && (url.includes('/api/graphql/') || url.includes('/video/'))) {
+    if (
+      options.isMediaDownloaderActive?.() &&
+      (url.includes('graphql') || url.includes('/video/') || url.includes('/api/v1/'))
+    ) {
       parseAndRecordMediaFromText(text);
     }
   };

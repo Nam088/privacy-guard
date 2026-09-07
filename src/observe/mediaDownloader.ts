@@ -186,6 +186,47 @@ export function parseAndRecordMediaFromText(text: string): void {
 }
 
 /**
+ * Extracts target story ID from a story URL or path.
+ * Handles:
+ * - Instagram: /stories/<username>/<numeric_id>/
+ * - Facebook: /stories/<bucket_id>/<story_token>/ (decoding base64 tokens like UzpfSVNDOjEwODg5Mzc3MTAxNjk4NzE=)
+ */
+export function extractStoryTargetId(pathname: string): string | undefined {
+  if (!pathname) {
+    return undefined;
+  }
+
+  // Instagram Story: /stories/<username>/<numericId>/
+  const igMatch = pathname.match(/\/stories\/[^/]+\/([0-9]{12,25})/);
+  if (igMatch) {
+    return igMatch[1];
+  }
+
+  // Facebook Story: /stories/<bucketId>/<storyToken>/
+  const fbMatch = pathname.match(/\/stories\/[^/]+\/([^/?]+)/);
+  if (fbMatch && fbMatch[1]) {
+    const rawToken = fbMatch[1];
+    if (/^[0-9]{12,25}$/.test(rawToken)) {
+      return rawToken;
+    }
+    // Attempt base64 decoding (e.g. UzpfSVNDOjEwODg5Mzc3MTAxNjk4NzE= -> S:_ISC:1088937710169871)
+    try {
+      if (typeof atob === 'function') {
+        const decoded = atob(decodeURIComponent(rawToken));
+        const numMatch = decoded.match(/([0-9]{12,25})/);
+        if (numMatch) {
+          return numMatch[1];
+        }
+      }
+    } catch {
+      // ignore invalid base64
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Extracts the specific video or post ID associated with a DOM element container.
  * Prioritizes container-level attributes and poster IDs to avoid sticking to page URL in feeds.
  */
@@ -197,12 +238,18 @@ export function extractTargetVideoId(el: HTMLElement): string | undefined {
     return dataId;
   }
 
-  // 2. Direct or descendant links containing /reel/<id>, /videos/<id>, or /watch/<id>
-  const linkMatch = el.querySelector('a[href*="/reel/"], a[href*="/videos/"], a[href*="/watch/"]')
-    ?.getAttribute('href')
-    ?.match(/\/(?:reel|videos?|watch)\/([0-9]+)/);
-  if (linkMatch) {
-    return linkMatch[1];
+  // 2. Direct or descendant links containing /reel/<id>, /videos/<id>, /watch/<id>, or /stories/...
+  const link = el.querySelector('a[href*="/reel/"], a[href*="/videos/"], a[href*="/watch/"], a[href*="/stories/"]');
+  if (link) {
+    const href = link.getAttribute('href') || '';
+    const linkMatch = href.match(/\/(?:reel|videos?|watch)\/([0-9]+)/);
+    if (linkMatch) {
+      return linkMatch[1];
+    }
+    const storyId = extractStoryTargetId(href);
+    if (storyId) {
+      return storyId;
+    }
   }
 
   // 3. Check video poster attribute for embedded video ID
@@ -216,8 +263,18 @@ export function extractTargetVideoId(el: HTMLElement): string | undefined {
     }
   }
 
+  // 4. On story pages (/stories/...): active story ID from page URL
+  if (typeof window !== 'undefined' && window.location) {
+    const isStory = window.location.pathname.includes('/stories/');
+    if (isStory) {
+      const storyId = extractStoryTargetId(window.location.pathname);
+      if (storyId) {
+        return storyId;
+      }
+    }
+  }
 
-  // 4. Fallback: only if the page has exactly ONE video or the video is currently at the top of the viewport
+  // 5. Fallback: only if the page has exactly ONE video or the video is currently at the top of the viewport
   if (typeof window !== 'undefined' && window.location) {
     const doc = el.ownerDocument || window.document;
     const allVideos = doc.querySelectorAll('video');
@@ -248,8 +305,27 @@ export function extractFacebookScriptVideos(targetId?: string): string | null {
   }
   const isStory = typeof window !== 'undefined' && window.location?.pathname?.includes('/stories/');
   const storyParts = isStory && window.location ? window.location.pathname.split('/').filter(Boolean) : [];
-  const storyBucketId = storyParts[1];
   const storyToken = storyParts[2];
+  let decodedStoryId: string | undefined;
+  if (storyToken) {
+    if (/^[0-9]{12,25}$/.test(storyToken)) {
+      decodedStoryId = storyToken;
+    } else {
+      try {
+        if (typeof atob === 'function') {
+          const decoded = atob(decodeURIComponent(storyToken));
+          const numMatch = decoded.match(/([0-9]{12,25})/);
+          if (numMatch) {
+            decodedStoryId = numMatch[1];
+          }
+        }
+      } catch {
+        // ignore invalid base64
+      }
+    }
+  }
+
+  const effectiveStoryId = targetId || decodedStoryId;
 
   const candidates: Array<{ bitrate: number; url: string }> = [];
   const scripts = Array.from(document.scripts);
@@ -257,14 +333,6 @@ export function extractFacebookScriptVideos(targetId?: string): string | null {
   const scanScript = (text: string, filterTarget: boolean) => {
     if (!text || (!text.includes('BaseURL') && !text.includes('playable_url') && !text.includes('.mp4'))) {
       return;
-    }
-
-    // On stories, match scripts that contain the specific story author/bucket or token
-    if (isStory && (storyToken || storyBucketId) && filterTarget) {
-      const matchesStory = (storyToken && text.includes(storyToken)) || (storyBucketId && text.includes(storyBucketId));
-      if (!matchesStory) {
-        return;
-      }
     }
 
     // Matches both JSON-escaped https:\/\/ and regular https:// URLs
@@ -305,13 +373,31 @@ export function extractFacebookScriptVideos(targetId?: string): string | null {
         bitrate = 0;
       }
 
-      if (filterTarget && targetId) {
-        const matchesTarget =
-          clean.includes(targetId) ||
-          text.includes(targetId) ||
-          decodedVideoId === targetId;
-        if (!matchesTarget) {
-          continue;
+      if (filterTarget) {
+        if (isStory) {
+          // On stories: strictly require matching the specific story token or story video ID.
+          // NEVER match by storyBucketId alone, because all stories of the same user share the same bucket!
+          let matchesStory = false;
+          if (storyToken && text.includes(storyToken)) {
+            matchesStory = true;
+          }
+          if (
+            effectiveStoryId &&
+            (clean.includes(effectiveStoryId) || text.includes(effectiveStoryId) || decodedVideoId === effectiveStoryId)
+          ) {
+            matchesStory = true;
+          }
+          if (!matchesStory) {
+            continue;
+          }
+        } else if (targetId) {
+          const matchesTarget =
+            clean.includes(targetId) ||
+            text.includes(targetId) ||
+            decodedVideoId === targetId;
+          if (!matchesTarget) {
+            continue;
+          }
         }
       }
 
@@ -319,21 +405,22 @@ export function extractFacebookScriptVideos(targetId?: string): string | null {
     }
   };
 
-
   // Pass 1: Scan scripts backwards, targeting specific story token / targetId
+  const mustFilter = Boolean(targetId) || Boolean(isStory && (storyToken || effectiveStoryId));
   for (let i = scripts.length - 1; i >= 0; i -= 1) {
     const text = scripts[i]?.text;
     if (text) {
-      scanScript(text, Boolean(targetId) || Boolean(isStory && (storyToken || storyBucketId)));
+      scanScript(text, mustFilter);
     }
     if (candidates.length > 0) {
       break;
     }
   }
 
-  // Pass 2: If targeted search yielded nothing AND no targetId was specified, fallback to relaxed scan.
-  // When a specific targetId was requested, never return an unrelated video from Pass 2.
-  if (candidates.length === 0 && !targetId) {
+  // Pass 2: If targeted search yielded nothing AND no targetId was specified AND NOT on a story page,
+  // fallback to relaxed scan. On story pages or when a specific targetId was requested,
+  // NEVER return an unrelated historical video from Pass 2.
+  if (candidates.length === 0 && !targetId && !isStory) {
     for (let i = scripts.length - 1; i >= 0; i -= 1) {
       const text = scripts[i]?.text;
       if (text) {
@@ -372,7 +459,7 @@ export function resolveMediaSource(el: HTMLElement): { url: string; isVideo: boo
 
     const targetVideoId = extractTargetVideoId(el);
 
-    // A. Check network-captured progressive streams (scrolled Reels / dynamic GraphQL)
+    // A. Check network-captured progressive streams (scrolled Reels / dynamic GraphQL / Stories)
     if (targetVideoId) {
       const captured = getCapturedVideo(targetVideoId);
       if (captured) {
@@ -389,6 +476,8 @@ export function resolveMediaSource(el: HTMLElement): { url: string; isVideo: boo
     // C. Sniff from recent browser network performance entries (Instagram / Progressive video)
     if (typeof performance !== 'undefined' && typeof performance.getEntriesByType === 'function') {
       const entries = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+      const isStory = typeof window !== 'undefined' && window.location?.pathname?.includes('/stories/');
+
       for (let i = entries.length - 1; i >= 0; i -= 1) {
         const name = entries[i]?.name;
         if (
@@ -399,7 +488,27 @@ export function resolveMediaSource(el: HTMLElement): { url: string; isVideo: boo
           !name.includes('vbr3_audio') &&
           !name.includes('dash_live')
         ) {
-          if (!targetVideoId || name.includes(targetVideoId)) {
+          let entryVideoId: string | undefined;
+          try {
+            const u = new URL(name);
+            const efg = u.searchParams.get('efg');
+            if (efg && typeof atob === 'function') {
+              const decoded = JSON.parse(atob(decodeURIComponent(efg)));
+              if (decoded.video_id) {
+                entryVideoId = String(decoded.video_id);
+              }
+            }
+          } catch {
+            // ignore
+          }
+
+          if (targetVideoId) {
+            const matches = name.includes(targetVideoId) || (entryVideoId && entryVideoId === targetVideoId);
+            if (matches) {
+              return { url: sanitizeMediaUrl(name), isVideo: true };
+            }
+          } else if (!isStory) {
+            // Only accept unconstrained performance entry if NOT on stories
             return { url: sanitizeMediaUrl(name), isVideo: true };
           }
         }
@@ -410,17 +519,7 @@ export function resolveMediaSource(el: HTMLElement): { url: string; isVideo: boo
     return null;
   }
 
-
-  // 2. On Facebook / Instagram Story pages: check if a story video is embedded in scripts
-  const isStory = typeof window !== 'undefined' && window.location?.pathname?.includes('/stories/');
-  if (isStory) {
-    const fbStoryVideo = extractFacebookScriptVideos();
-    if (fbStoryVideo) {
-      return { url: fbStoryVideo, isVideo: true };
-    }
-  }
-
-  // 3. If element is strictly an image container (Story / Photo) WITHOUT any video
+  // 2. If element has NO video: resolve directly to image (Story / Photo)
   const img = (el.tagName === 'IMG' ? el : el.querySelector('img')) as HTMLImageElement | null;
   if (img) {
     const src = img.currentSrc || img.src;
@@ -456,6 +555,22 @@ export function resolveMediaSource(el: HTMLElement): { url: string; isVideo: boo
 
       if (!isExcluded && isMediaCdn && isRealSize) {
         return { url: href, isVideo: false };
+      }
+    }
+  }
+
+  // 4. Fallback for story pages only if container has no video and no image, but target story video was captured
+  const isStory = typeof window !== 'undefined' && window.location?.pathname?.includes('/stories/');
+  if (isStory) {
+    const targetVideoId = extractTargetVideoId(el);
+    if (targetVideoId) {
+      const captured = getCapturedVideo(targetVideoId);
+      if (captured) {
+        return { url: sanitizeMediaUrl(captured.url), isVideo: true };
+      }
+      const fbStoryVideo = extractFacebookScriptVideos(targetVideoId);
+      if (fbStoryVideo) {
+        return { url: fbStoryVideo, isVideo: true };
       }
     }
   }
