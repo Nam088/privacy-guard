@@ -52,7 +52,7 @@ const STOP_STATE_NAME = /idle|paus|stop|inactive|clear|gone/i;
  * Suppressing those would cost the user the incoming "is typing" indicator without hiding
  * anything, so they are never dropped. The trailing capital keeps `on` from eating `oneTap...`.
  */
-const INBOUND_ACTION = /^(?:on|(?:un)?subscribe|listen|observe|watch|receive|get|fetch|read|is|has)[A-Z_]/;
+const INBOUND_ACTION = /^(?:on|(?:un)?subscribe|listen|observe|watch|receive|get|fetch|is|has)[A-Z_]/;
 
 function matchesChatKeyword(val: unknown): boolean {
   if (typeof val !== 'string') {
@@ -83,7 +83,11 @@ function matchesReceiptKeyword(val: unknown): boolean {
   const lower = val.toLowerCase();
   return (
     lower.includes('receipt') ||
+    lower.includes('watermark') ||
     lower.includes('markread') ||
+    lower.includes('markasread') ||
+    lower.includes('markthreadread') ||
+    lower.includes('threadread') ||
     lower.includes('markseen') ||
     lower.includes('seenstate') ||
     lower.includes('displayedreceipt')
@@ -143,7 +147,7 @@ function copyFunctionShape(from: object, to: object): void {
 }
 
 /**
- * Attaches interception to a MAWBridgeFireAndForget module instance.
+ * Attaches interception to a MAWBridge / MAWBridgeFireAndForget module instance.
  */
 function patchBridgeInstance(
   mod: unknown,
@@ -160,48 +164,66 @@ function patchBridgeInstance(
   }
 
   const candidate = mod as Record<string, unknown>;
+
+  // If candidate is a module with getBridge(), hook getBridge() AND patch current instance
+  if (typeof candidate.getBridge === 'function') {
+    const origGetBridge = candidate.getBridge as (...args: unknown[]) => unknown;
+    if (!WRAPPED.has(origGetBridge)) {
+      const wrappedGetBridge = function (this: unknown, ...args: unknown[]): unknown {
+        const instance = origGetBridge.apply(this, args);
+        if (instance && (typeof instance === 'object' || typeof instance === 'function')) {
+          patchBridgeInstance(instance, isTypingSuppressed, isReadSuppressed, isStopState, undoList);
+        }
+        return instance;
+      };
+      WRAPPED.add(wrappedGetBridge);
+      candidate.getBridge = wrappedGetBridge;
+      undoList.push(() => {
+        candidate.getBridge = origGetBridge;
+      });
+      try {
+        const existing = origGetBridge.call(candidate);
+        if (existing && (typeof existing === 'object' || typeof existing === 'function')) {
+          patchBridgeInstance(existing, isTypingSuppressed, isReadSuppressed, isStopState, undoList);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   let targetObject: Record<string, unknown> | undefined = undefined;
 
-  if (typeof candidate.fireAndForget === 'function') {
+  if (typeof candidate.fireAndForget === 'function' || typeof candidate.sendAndReceive === 'function') {
     targetObject = candidate;
   } else if (
     candidate.default &&
-    typeof (candidate.default as Record<string, unknown>).fireAndForget === 'function'
+    (typeof (candidate.default as Record<string, unknown>).fireAndForget === 'function' ||
+      typeof (candidate.default as Record<string, unknown>).sendAndReceive === 'function')
   ) {
     targetObject = candidate.default as Record<string, unknown>;
   } else if (
     candidate[BRIDGE_MODULE] &&
-    typeof (candidate[BRIDGE_MODULE] as Record<string, unknown>).fireAndForget === 'function'
+    (typeof (candidate[BRIDGE_MODULE] as Record<string, unknown>).fireAndForget === 'function' ||
+      typeof (candidate[BRIDGE_MODULE] as Record<string, unknown>).sendAndReceive === 'function')
   ) {
     targetObject = candidate[BRIDGE_MODULE] as Record<string, unknown>;
   }
 
-  if (!targetObject || typeof targetObject.fireAndForget !== 'function') {
+  if (!targetObject) {
     return false;
   }
 
-  const originalFire = targetObject.fireAndForget as (...args: unknown[]) => unknown;
+  let patchedAny = false;
 
-  if (WRAPPED.has(originalFire)) {
-    return true;
-  }
-
-  /**
-   * What a real call hands back. Nothing here documents the contract of `fireAndForget`, so a
-   * cancelled call mirrors whatever a forwarded one was last seen to return instead of asserting
-   * a promise. Before any call has been forwarded, a resolved promise is the safer guess.
-   */
-  let returnsThenable: boolean | undefined = undefined;
-
-  /**
-   * A predicate reaching into extension settings can fail. Failing open keeps the composer
-   * working; failing closed would silently break the user's typing indicator forever.
-   */
   function shouldSuppress(args: unknown[]): boolean {
     try {
       const isChatState = isOutboundChatState(args[0], args[1]);
-      if (isChatState && !isStopState(args[2]) && isTypingSuppressed()) {
-        return true;
+      if (isChatState && isTypingSuppressed()) {
+        const hasStop = args.some((arg) => isStopState(arg));
+        if (!hasStop) {
+          return true;
+        }
       }
       const isReceipt = isOutboundReceipt(args[0], args[1]);
       if (isReceipt && isReadSuppressed()) {
@@ -213,48 +235,68 @@ function patchBridgeInstance(
     }
   }
 
-  const patchedFire = function (this: unknown, ...args: unknown[]): unknown {
-    if (shouldSuppress(args)) {
-      return returnsThenable === false ? undefined : Promise.resolve();
+  function patchMethod(methodName: 'fireAndForget' | 'sendAndReceive'): void {
+    if (!targetObject || typeof targetObject[methodName] !== 'function') {
+      return;
+    }
+    const originalMethod = targetObject[methodName] as (...args: unknown[]) => unknown;
+    if (WRAPPED.has(originalMethod)) {
+      patchedAny = true;
+      return;
     }
 
-    const result = originalFire.apply(this, args);
-    if (returnsThenable === undefined) {
-      returnsThenable = isThenable(result);
-    }
-    return result;
-  };
-  WRAPPED.add(patchedFire);
+    let returnsThenable: boolean | undefined = undefined;
 
-  let assigned = false;
-  try {
-    targetObject.fireAndForget = patchedFire;
-    assigned = true;
-  } catch {
-    // Attempt defineProperty if direct assignment fails
+    const patchedMethod = function (this: unknown, ...args: unknown[]): unknown {
+      if (shouldSuppress(args)) {
+        return returnsThenable === false ? undefined : Promise.resolve();
+      }
+
+      const result = originalMethod.apply(this, args);
+      if (returnsThenable === undefined) {
+        returnsThenable = isThenable(result);
+      }
+      return result;
+    };
+    WRAPPED.add(patchedMethod);
+
+    let assigned = false;
+    try {
+      targetObject[methodName] = patchedMethod;
+      assigned = true;
+    } catch {
+      // Attempt defineProperty
+    }
+
+    if (!assigned) {
+      try {
+        Object.defineProperty(targetObject, methodName, {
+          value: patchedMethod,
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        });
+      } catch {
+        return;
+      }
+    }
+
+    undoList.push(() => {
+      try {
+        if (targetObject) {
+          targetObject[methodName] = originalMethod;
+        }
+      } catch {
+        // Property refused restoration
+      }
+    });
+    patchedAny = true;
   }
 
-  if (!assigned) {
-    try {
-      Object.defineProperty(targetObject, 'fireAndForget', {
-        value: patchedFire,
-        writable: true,
-        configurable: true,
-        enumerable: true,
-      });
-    } catch {
-      return false;
-    }
-  }
+  patchMethod('fireAndForget');
+  patchMethod('sendAndReceive');
 
-  undoList.push(() => {
-    try {
-      targetObject.fireAndForget = originalFire;
-    } catch {
-      // Property refused restoration
-    }
-  });
-  return true;
+  return patchedAny;
 }
 
 /**
@@ -356,17 +398,42 @@ export function observeMawBridge(
   let bridgePatched = false;
 
   function isStopState(payload: unknown): boolean {
-    if (!payload || typeof payload !== 'object') {
+    if (payload === undefined || payload === null) {
       return false;
     }
-    const state = (payload as Record<string, unknown>).state;
-    if (state === undefined || state === null) {
-      return false;
+    if (typeof payload === 'number') {
+      return payload === 0 || payload === 2;
     }
-    if (typeof state === 'string' && STOP_STATE_NAME.test(state)) {
-      return true;
+    if (typeof payload === 'string') {
+      return STOP_STATE_NAME.test(payload);
     }
-    return stopStates.has(state);
+    if (typeof payload === 'object') {
+      const rec = payload as Record<string, unknown>;
+      if (rec.state !== undefined) {
+        return isStopState(rec.state);
+      }
+      if (rec.chat_state !== undefined) {
+        return isStopState(rec.chat_state);
+      }
+      if (rec.chatState !== undefined) {
+        return isStopState(rec.chatState);
+      }
+      if (rec.is_typing !== undefined) {
+        return rec.is_typing === 0;
+      }
+      if (rec.arg !== undefined) {
+        return isStopState(rec.arg);
+      }
+      if (rec.args !== undefined) {
+        return isStopState(rec.args);
+      }
+      for (const val of Object.values(rec)) {
+        if (typeof val === 'string' && STOP_STATE_NAME.test(val)) return true;
+        if (typeof val === 'number' && (val === 0 || val === 2)) return true;
+        if (stopStates.has(val)) return true;
+      }
+    }
+    return stopStates.has(payload);
   }
 
   /**

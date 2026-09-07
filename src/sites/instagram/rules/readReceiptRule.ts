@@ -11,6 +11,7 @@ import {
   decideByOperationNames,
   parseGraphQLUrl,
 } from '../../facebook/rules/graphqlRequest';
+import { collectWorkerActions, isOutboundMessagePayload } from '@/sites/workerUtil';
 
 const DIRECT_SEEN_REGEX =
   /readreceipt|markthreadread|mark.*thread.*as.*read|igdmarkthreadasread|mercurythreadmarkread|threadmarkread|readwatermark|direct.*seen|seen.*direct|mark.*thread.*seen/i;
@@ -154,26 +155,20 @@ export class InstagramReadReceiptRule implements SuppressionRule, HttpSuppressio
       return 'pass';
     }
 
-    const rec = data as Record<string, unknown>;
-    const candidates = [
-      rec.action,
-      rec.type,
-      rec.name,
-      rec.event,
-      rec.command,
-      rec.actionType,
-    ];
+    if (isOutboundMessagePayload(data)) {
+      return 'pass';
+    }
+
+    const candidates = collectWorkerActions(data);
 
     for (const candidate of candidates) {
-      if (typeof candidate === 'string') {
-        const lowered = candidate.toLowerCase();
-        if (
-          INSTAGRAM_SIGNATURES.readReceiptWorkerActions.some((action) =>
-            lowered.includes(action.toLowerCase()),
-          )
-        ) {
-          return 'drop';
-        }
+      const lowered = candidate.toLowerCase();
+      if (
+        INSTAGRAM_SIGNATURES.readReceiptWorkerActions.some((action) =>
+          lowered.includes(action.toLowerCase()),
+        )
+      ) {
+        return 'drop';
       }
     }
 

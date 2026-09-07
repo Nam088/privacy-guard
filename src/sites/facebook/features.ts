@@ -34,6 +34,14 @@ export const FACEBOOK_FEATURES: readonly Feature[] = [
     status: 'active',
     category: 'feed',
   },
+  {
+    id: 'mediaDownloader',
+    label: 'Quick media downloader',
+    description: 'Show a subtle download button on hover to save videos and stories in HD',
+    defaultEnabled: false,
+    status: 'active',
+    category: 'feed',
+  },
 
   // --- Messages & Privacy ---
   {

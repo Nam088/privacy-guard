@@ -2,6 +2,7 @@ import { decodeFrame } from './frameDecoder';
 import { extractTasks, type FrameTasks } from './taskExtractor';
 
 export * from './frameDecoder';
+export * from './frameEncoder';
 export * from './taskExtractor';
 
 /** Decodes a frame and extracts its tasks in one step. */

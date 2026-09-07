@@ -5,8 +5,8 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||connect.facebook.net/",
-      "resourceTypes": ["script"],
-      "excludedInitiatorDomains": ["facebook.com", "messenger.com", "instagram.com"]
+      "resourceTypes": ["script", "xmlhttprequest"],
+      "excludedInitiatorDomains": ["facebook.com", "messenger.com", "instagram.com", "meta.com", "threads.net"]
     }
   },
   {
@@ -16,7 +16,7 @@
     "condition": {
       "urlFilter": "||facebook.com/tr",
       "resourceTypes": ["image", "xmlhttprequest", "ping", "script", "sub_frame"],
-      "excludedInitiatorDomains": ["facebook.com", "messenger.com", "instagram.com"]
+      "excludedInitiatorDomains": ["facebook.com", "messenger.com", "instagram.com", "meta.com", "threads.net"]
     }
   },
   {
@@ -26,7 +26,7 @@
     "condition": {
       "urlFilter": "||facebook.net/signals/",
       "resourceTypes": ["script", "xmlhttprequest", "image"],
-      "excludedInitiatorDomains": ["facebook.com", "messenger.com", "instagram.com"]
+      "excludedInitiatorDomains": ["facebook.com", "messenger.com", "instagram.com", "meta.com", "threads.net"]
     }
   }
 ]

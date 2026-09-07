@@ -6,6 +6,7 @@ import {
   setFeature,
   setLocale,
   setMasterEnabled,
+  setTheme,
   settings,
   stopSettingsStore,
 } from '@/core/settings/store';
@@ -20,6 +21,7 @@ import {
   BrandLogo,
   ChatDotsIcon,
   ClockStopIcon,
+  DownloadIcon,
   EyeOffIcon,
   FacebookIcon,
   FilmSlashIcon,
@@ -79,6 +81,9 @@ function getFeatureIcon(key: string) {
       return <RadarIcon size={15} class="text-rose-500" />;
     case 'global.stripFbclid':
       return <LinkSlashIcon size={15} class="text-amber-500" />;
+    case 'facebook.mediaDownloader':
+    case 'instagram.mediaDownloader':
+      return <DownloadIcon size={15} class="text-sky-500" />;
     default:
       return null;
   }
@@ -388,8 +393,39 @@ export function Popup() {
           </div>
         </div>
 
-        {/* Sidebar Footer: Language Switcher & Disclaimer */}
+        {/* Sidebar Footer: Theme, Language Switcher & Disclaimer */}
         <div class="pt-3 border-t border-border/60 flex flex-col gap-2">
+          {/* Theme Switcher */}
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-text-muted font-medium">Theme</span>
+            <div class="flex items-center rounded-lg border border-border/80 bg-surface-muted p-0.5 text-[9.5px]">
+              <button
+                type="button"
+                class={current.theme === 'light' ? 'px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-surface-card text-text shadow-xs cursor-default' : 'px-1.5 py-0.5 rounded-md text-[9.5px] font-medium text-text-muted hover:text-text cursor-pointer transition-colors'}
+                onClick={() => void setTheme('light')}
+                title="Light"
+              >
+                Light
+              </button>
+              <button
+                type="button"
+                class={current.theme === 'dark' ? 'px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-surface-card text-text shadow-xs cursor-default' : 'px-1.5 py-0.5 rounded-md text-[9.5px] font-medium text-text-muted hover:text-text cursor-pointer transition-colors'}
+                onClick={() => void setTheme('dark')}
+                title="Dark"
+              >
+                Dark
+              </button>
+              <button
+                type="button"
+                class={current.theme === 'system' ? 'px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-surface-card text-text shadow-xs cursor-default' : 'px-1.5 py-0.5 rounded-md text-[9.5px] font-medium text-text-muted hover:text-text cursor-pointer transition-colors'}
+                onClick={() => void setTheme('system')}
+                title="Auto (System)"
+              >
+                Auto
+              </button>
+            </div>
+          </div>
+
           <div class="flex items-center justify-between">
             <span class="text-[10px] text-text-muted font-medium">Language</span>
             <div class="flex items-center rounded-lg border border-border/80 bg-surface-muted p-0.5 text-[9.5px]">

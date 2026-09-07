@@ -461,4 +461,48 @@ describe('observeMawBridge', () => {
       restore();
     }).not.toThrow();
   });
+
+  it('intercepts MAWBridge when resolved via getBridge() and patches fireAndForget / sendAndReceive', () => {
+    const fireMock = vi.fn();
+    const sendMock = vi.fn();
+    const bridgeInstance = {
+      fireAndForget: fireMock,
+      sendAndReceive: sendMock,
+    };
+    const mawBridgeModule = {
+      getBridge: () => bridgeInstance,
+    };
+
+    const rawRequire = vi.fn((name: string) => {
+      if (name === 'MAWBridge') {
+        return mawBridgeModule;
+      }
+      return {};
+    });
+
+    const scope = { require: rawRequire };
+    const restore = observeMawBridge(scope, () => true);
+
+    const req = scope.require as unknown as (name: string) => typeof mawBridgeModule;
+    const resolved = req('MAWBridge');
+    const bridge = resolved.getBridge();
+
+    // Typing should be dropped
+    bridge.fireAndForget('backend', 'sendChatStateFromComposer', { state: 1 });
+    expect(fireMock).not.toHaveBeenCalled();
+
+    // Stop state should pass through
+    bridge.fireAndForget('backend', 'sendChatStateFromComposer', { state: 0 });
+    expect(fireMock).toHaveBeenCalledTimes(1);
+
+    // sendAndReceive typing should also be dropped
+    bridge.sendAndReceive('backend', 'sendChatStateFromComposer', { state: 1 });
+    expect(sendMock).not.toHaveBeenCalled();
+
+    // sendAndReceive stop state should pass through
+    bridge.sendAndReceive('backend', 'sendChatStateFromComposer', { state: 0 });
+    expect(sendMock).toHaveBeenCalledTimes(1);
+
+    restore();
+  });
 });

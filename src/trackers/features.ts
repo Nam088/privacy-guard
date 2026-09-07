@@ -12,7 +12,7 @@ export const GLOBAL_FEATURES: readonly Feature[] = [
     id: 'stripFbclid',
     label: 'Strip fbclid from links',
     description:
-      'Remove the tracking parameter when you follow a link off Facebook. Asks for permission to read all sites',
+      'Remove fbclid, igshid, utm_*, si, and gclid tracking parameters when following links. Asks for permission to read all sites',
     defaultEnabled: false,
     status: 'active',
   },

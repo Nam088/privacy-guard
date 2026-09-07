@@ -13,6 +13,7 @@ export interface CachedReceipt {
 }
 
 const MAX_BUFFER_SIZE = 50;
+const RECEIPT_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 class ReadReplayManager {
   private buffer: CachedReceipt[] = [];
@@ -20,18 +21,39 @@ class ReadReplayManager {
   private originalSend: ((data: unknown) => void) | null = null;
 
   registerSocket(socket: WebSocket, originalSend: (data: unknown) => void): void {
-    if (socket && typeof socket.url === 'string' && socket.url.includes('/ws/lightspeed')) {
+    if (
+      socket &&
+      typeof socket.url === 'string' &&
+      (socket.url.includes('/ws/lightspeed') || socket.url.includes('/ws/realtime'))
+    ) {
       this.activeSocket = socket;
       this.originalSend = originalSend;
+
+      if (typeof socket.addEventListener === 'function') {
+        socket.addEventListener(
+          'close',
+          () => {
+            if (this.activeSocket === socket) {
+              this.activeSocket = null;
+              this.originalSend = null;
+            }
+          },
+          { once: true },
+        );
+      }
     }
   }
 
   cacheSuppressedReceipt(url: string, data: unknown, threadId?: string | number): void {
+    const now = Date.now();
+    // Prune stale receipts older than TTL
+    this.buffer = this.buffer.filter((r) => now - r.timestamp < RECEIPT_TTL_MS);
+
     this.buffer.push({
       threadId,
       url,
       data,
-      timestamp: Date.now(),
+      timestamp: now,
     });
     if (this.buffer.length > MAX_BUFFER_SIZE) {
       this.buffer.shift();
@@ -42,6 +64,17 @@ class ReadReplayManager {
     if (!this.activeSocket || !this.originalSend) {
       return false;
     }
+
+    if (
+      typeof this.activeSocket.readyState === 'number' &&
+      typeof WebSocket !== 'undefined' &&
+      this.activeSocket.readyState !== WebSocket.OPEN
+    ) {
+      return false;
+    }
+
+    const now = Date.now();
+    this.buffer = this.buffer.filter((r) => now - r.timestamp < RECEIPT_TTL_MS);
 
     let targetReceipt: CachedReceipt | undefined;
     if (threadId !== undefined) {

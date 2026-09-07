@@ -56,6 +56,75 @@ export function readBalancedJson(text: string, from = 0): unknown {
   return null;
 }
 
+function isNonEmptyObject(val: unknown): boolean {
+  if (typeof val !== 'object' || val === null) {
+    return false;
+  }
+  for (const _ in val) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Finds the starting byte index of a real JSON object or array,
+ * skipping past any binary header traps like `7b 7d` ({}).
+ */
+export function findJsonStart(bytes: Uint8Array): number {
+  for (let i = 0; i < bytes.length; i += 1) {
+    const byte = bytes[i];
+    if (byte === OPEN_BRACE) {
+      if (i + 1 < bytes.length && bytes[i + 1] === 0x7d) {
+        i += 1;
+        continue;
+      }
+      return i;
+    }
+    if (byte === OPEN_BRACKET) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Finds the exact byte boundaries (start and end inclusive-exclusive) of balanced JSON
+ * in a binary frame, skipping past binary header traps and string escapes.
+ */
+export function findJsonBounds(bytes: Uint8Array): { start: number; end: number } | null {
+  const start = findJsonStart(bytes);
+  if (start === -1) {
+    return null;
+  }
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < bytes.length; i += 1) {
+    const byte = bytes[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (byte === 0x5c) {
+        escaped = true;
+      } else if (byte === 0x22) {
+        inString = false;
+      }
+      continue;
+    }
+    if (byte === 0x22) {
+      inString = true;
+    } else if (byte === OPEN_BRACE || byte === OPEN_BRACKET) {
+      depth += 1;
+    } else if (byte === 0x7d || byte === 0x5d) {
+      depth -= 1;
+      if (depth === 0) {
+        return { start, end: i + 1 };
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Finds the JSON in a frame and parses it, skipping past the header's embedded `{}` rather than
  * stopping at it. Returns null for a frame carrying no JSON at all (e.g. 1-byte pings or acks).
@@ -65,12 +134,14 @@ export function decodeFrame(bytes: Uint8Array): unknown {
   // whole tail again at every brace. A frame carrying a hundred tasks has a lot of braces in it,
   // and this runs on every send. The scan moves to characters at this point precisely because a
   // byte offset stops matching a character offset the moment the payload is not all ASCII.
-  let firstCandidate = -1;
-  for (let i = 0; i < bytes.length; i += 1) {
-    const byte = bytes[i];
-    if (byte === OPEN_BRACE || byte === OPEN_BRACKET) {
-      firstCandidate = i;
-      break;
+  let firstCandidate = findJsonStart(bytes);
+  if (firstCandidate === -1) {
+    for (let i = 0; i < bytes.length; i += 1) {
+      const byte = bytes[i];
+      if (byte === OPEN_BRACE || byte === OPEN_BRACKET) {
+        firstCandidate = i;
+        break;
+      }
     }
   }
   if (firstCandidate === -1) {
@@ -84,7 +155,7 @@ export function decodeFrame(bytes: Uint8Array): unknown {
       continue;
     }
     const parsed = readBalancedJson(text, i);
-    if (parsed !== null && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+    if (parsed !== null && isNonEmptyObject(parsed)) {
       return parsed;
     }
   }

@@ -4,6 +4,8 @@ export type XhrVerdict = 'pass' | 'drop';
 
 export type InterceptXhr = (url: string, body?: unknown) => XhrVerdict;
 
+export type NetworkResponseCallback = (url: string, responseText: string) => void;
+
 interface XhrScope {
   XMLHttpRequest?: typeof XMLHttpRequest;
 }
@@ -82,17 +84,17 @@ function fakeResponse(xhr: XMLHttpRequest): void {
 }
 
 /**
- * Observes and selectively intercepts XMLHttpRequest calls.
+ * Observes and selectively intercepts XMLHttpRequest send calls.
  *
- * When an outbound XHR matches a suppression rule (such as storiesUpdateSeenStateMutation),
- * it returns a synthetic 200 OK response matching Facebook Relay's is_final payload without
- * hitting the network.
+ * Suppressed requests are short-circuited with a synthetic 200 OK Response matching Facebook Relay's
+ * completed stream shape, matching the behaviour in observeFetch.
  */
 export function observeXhr(
   scope: XhrScope,
   report: Report,
   frameUrl?: string,
   intercept?: InterceptXhr,
+  onResponse?: NetworkResponseCallback,
 ): () => void {
   let OriginalXHR: typeof XMLHttpRequest | undefined;
   try {
@@ -156,6 +158,17 @@ export function observeXhr(
     }, body);
 
     if (verdict !== 'drop') {
+      if (onResponse && requestUrl) {
+        this.addEventListener('load', () => {
+          try {
+            if (typeof this.responseText === 'string') {
+              onResponse(requestUrl, this.responseText);
+            }
+          } catch {
+            // Accessing responseText on certain responseTypes can throw; safe catch
+          }
+        });
+      }
       return Reflect.apply(originalSend, this, [body]);
     }
 

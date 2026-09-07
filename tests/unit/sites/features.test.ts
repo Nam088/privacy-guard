@@ -60,6 +60,7 @@ describe.each(MODULES)('site module $id', (site) => {
         'hideVoicePlayed',
         'scrambleDwellTime',
         'bypassLinkShim',
+        'mediaDownloader',
       ],
       instagram: [
         'hideReadReceipts',
@@ -71,6 +72,7 @@ describe.each(MODULES)('site module $id', (site) => {
         'hideOnlineStatus',
         'hideSponsoredPosts',
         'protectWebRtcIp',
+        'mediaDownloader',
       ],
     };
 

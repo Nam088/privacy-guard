@@ -55,9 +55,27 @@ export function newEvent(
   };
 }
 
+function getUtf8ByteLength(str: string): number {
+  let bytes = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    const code = str.charCodeAt(i);
+    if (code < 0x80) {
+      bytes += 1;
+    } else if (code < 0x800) {
+      bytes += 2;
+    } else if (code >= 0xd800 && code <= 0xdbff) {
+      bytes += 4;
+      i += 1;
+    } else {
+      bytes += 3;
+    }
+  }
+  return bytes;
+}
+
 export function describeValue(value: unknown): DescribedValue {
   if (typeof value === 'string') {
-    return { type: 'string', byteLength: new TextEncoder().encode(value).length };
+    return { type: 'string', byteLength: getUtf8ByteLength(value) };
   }
   if (value instanceof ArrayBuffer) {
     return { type: 'ArrayBuffer', byteLength: value.byteLength };

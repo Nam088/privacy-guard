@@ -12,6 +12,11 @@ import {
   isFacebookUrl,
   parseGraphQLUrl,
 } from './graphqlRequest';
+import {
+  collectWorkerActions,
+  extractStateValue,
+  isOutboundMessagePayload,
+} from '@/sites/workerUtil';
 
 /**
  * Matches operation names not on the signature list.
@@ -20,7 +25,6 @@ import {
  * once did, meant any payload containing "typing" ahead of the word "mutation" was dropped.
  */
 const TYPING_MUTATION_PATTERN = /typing.{0,30}mutation|typsubscription/i;
-
 
 function isTypingOperation(name: string): boolean {
   if (TYPING_MUTATION_PATTERN.test(name)) {
@@ -74,8 +78,20 @@ export class FacebookTypingRule implements SuppressionRule, HttpSuppressionRule 
           if (
             text.includes('send_typing_indicators') ||
             text.includes('send_typing_indicators_SECURE_MESSAGE_OVER_WA_ONE_TO_ONE') ||
-            text.includes('"event_name":"send_typing_indicators"')
+            text.includes('"event_name":"send_typing_indicators"') ||
+            text.includes('sendChatStateFromComposer') ||
+            text.includes('sendChatState') ||
+            text.includes('chatstate') ||
+            text.includes('chat_state')
           ) {
+            // Preserve stop states (e.g. idle, pause, stop, is_typing: 0) so recipient is never stuck with 3 dots
+            const isStop =
+              /["\\](?:idle|pause|stop|inactive|clear|gone)["\\]|"state":\s*0|"state":\s*2|"is_typing":\s*0|"chat_state":\s*0/i.test(
+                text,
+              );
+            if (isStop) {
+              return null;
+            }
             return {
               action: 'drop',
               ruleId: this.id,
@@ -167,47 +183,17 @@ export class FacebookTypingRule implements SuppressionRule, HttpSuppressionRule 
       return 'pass';
     }
 
-    const actionCandidates: string[] = [];
-    let stateCandidate: unknown = undefined;
-
-    if (Array.isArray(data)) {
-      for (const item of data) {
-        if (typeof item === 'string') {
-          actionCandidates.push(item);
-        } else if (item && typeof item === 'object') {
-          const extracted = extractStateValue(item);
-          if (extracted !== undefined && stateCandidate === undefined) {
-            stateCandidate = extracted;
-          }
-        }
-      }
-    } else {
-      const rec = data as Record<string, unknown>;
-      const keys = [
-        rec.action,
-        rec.type,
-        rec.name,
-        rec.event,
-        rec.event_name,
-        rec.command,
-        rec.actionType,
-      ];
-      for (const k of keys) {
-        if (typeof k === 'string') {
-          actionCandidates.push(k);
-        }
-      }
-      stateCandidate = extractStateValue(rec);
-    }
+    const actionCandidates = collectWorkerActions(data);
+    const stateCandidate = extractStateValue(data);
 
     for (const candidate of actionCandidates) {
       const lowered = candidate.toLowerCase();
       if (
         FACEBOOK_SIGNATURES.typingWorkerActions.some(
-          (action) => lowered === action.toLowerCase(),
+          (action) => lowered === action.toLowerCase() || lowered.includes(action.toLowerCase()),
         )
       ) {
-        // Preserve stop states (e.g. idle, paused, stopped) so user is not stuck in typing indicator
+        // Preserve stop states (e.g. idle, paused, stopped, 0) so user is not stuck in typing indicator
         if (
           typeof stateCandidate === 'string' &&
           FACEBOOK_SIGNATURES.typingStopStates.some((stop) =>
@@ -230,90 +216,6 @@ export class FacebookTypingRule implements SuppressionRule, HttpSuppressionRule 
   }
 }
 
-function extractStateValue(data: unknown): unknown {
-  if (!data || typeof data !== 'object') {
-    return undefined;
-  }
-  if (Array.isArray(data)) {
-    for (const item of data) {
-      const val = extractStateValue(item);
-      if (val !== undefined) {
-        return val;
-      }
-    }
-    return undefined;
-  }
-  const obj = data as Record<string, unknown>;
-  if (obj.state !== undefined) {
-    return obj.state;
-  }
-  if (obj.args !== undefined) {
-    return extractStateValue(obj.args);
-  }
-  return undefined;
-}
+export { collectWorkerActions, extractStateValue, isOutboundMessagePayload };
 
-function isOutboundMessagePayload(data: unknown): boolean {
-  if (!data || typeof data !== 'object') {
-    return false;
-  }
-  if (Array.isArray(data)) {
-    for (const item of data) {
-      if (typeof item === 'string') {
-        const lower = item.toLowerCase();
-        if (
-          lower === 'sendmessage' ||
-          lower === 'sendtextmessage' ||
-          lower === 'sendmediamessage' ||
-          lower.includes('sendmessage') ||
-          lower.includes('send_message')
-        ) {
-          return true;
-        }
-      } else if (item && typeof item === 'object') {
-        if (isOutboundMessagePayload(item)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
 
-  const rec = data as Record<string, unknown>;
-  if (
-    rec.body !== undefined ||
-    rec.text !== undefined ||
-    rec.message !== undefined ||
-    rec.offline_threading_id !== undefined ||
-    rec.message_id !== undefined ||
-    rec.client_context !== undefined
-  ) {
-    return true;
-  }
-
-  const keys = [
-    rec.action,
-    rec.type,
-    rec.name,
-    rec.event,
-    rec.event_name,
-    rec.command,
-    rec.actionType,
-  ];
-  for (const k of keys) {
-    if (typeof k === 'string') {
-      const lower = k.toLowerCase();
-      if (
-        lower === 'sendmessage' ||
-        lower === 'sendtextmessage' ||
-        lower === 'sendmediamessage' ||
-        lower.includes('sendmessage') ||
-        lower.includes('send_message')
-      ) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}

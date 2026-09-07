@@ -11,6 +11,7 @@ import {
   decideByOperationNames,
   parseGraphQLUrl,
 } from '../../facebook/rules/graphqlRequest';
+import { collectWorkerActions } from '@/sites/workerUtil';
 
 const TYPING_MUTATION_PATTERN =
   /typing.{0,30}mutation|typsubscription|direct.*typing|activity.*status|polaris.*activity/i;
@@ -185,26 +186,16 @@ export class InstagramTypingRule implements SuppressionRule, HttpSuppressionRule
       return 'pass';
     }
 
-    const rec = data as Record<string, unknown>;
-    const candidates = [
-      rec.action,
-      rec.type,
-      rec.name,
-      rec.event,
-      rec.command,
-      rec.actionType,
-    ];
+    const candidates = collectWorkerActions(data);
 
     for (const candidate of candidates) {
-      if (typeof candidate === 'string') {
-        const lowered = candidate.toLowerCase();
-        if (
-          INSTAGRAM_SIGNATURES.typingWorkerActions.some((action) =>
-            lowered.includes(action.toLowerCase()),
-          )
-        ) {
-          return 'drop';
-        }
+      const lowered = candidate.toLowerCase();
+      if (
+        INSTAGRAM_SIGNATURES.typingWorkerActions.some((action) =>
+          lowered.includes(action.toLowerCase()),
+        )
+      ) {
+        return 'drop';
       }
     }
 

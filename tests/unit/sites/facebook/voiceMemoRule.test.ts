@@ -29,6 +29,15 @@ describe('FacebookVoiceMemoRule', () => {
     expect(verdict?.action).toBe('drop');
   });
 
+  it('drops requests carrying AudioClipsPlaybackStartFalcoEvent', () => {
+    const body = new URLSearchParams({
+      fb_api_req_friendly_name: 'AudioClipsPlaybackStartFalcoEvent',
+    }).toString();
+
+    const verdict = rule.evaluateHttp(graphqlUrl, body);
+    expect(verdict?.action).toBe('drop');
+  });
+
   it('passes unrelated graphql queries', () => {
     const body = new URLSearchParams({
       fb_api_req_friendly_name: 'CometFeedQuery',

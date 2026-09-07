@@ -139,13 +139,21 @@ export const vi: TranslationDictionary = {
       label: 'Ẩn bài viết được tài trợ & quảng cáo',
       description: 'Ẩn các bài viết quảng cáo và tài trợ trên bảng tin Instagram của bạn',
     },
+    'facebook.mediaDownloader': {
+      label: 'Tải nhanh Video & Story',
+      description: 'Hiển thị nút tải tinh tế khi rê chuột để lưu video và story chất lượng cao',
+    },
+    'instagram.mediaDownloader': {
+      label: 'Tải nhanh Reels & Story',
+      description: 'Hiển thị nút tải tinh tế khi rê chuột để lưu Reels, video và story chất lượng cao',
+    },
     'instagram.protectWebRtcIp': {
       label: 'Chống rò rỉ IP qua WebRTC',
       description: 'Ngăn chặn lộ địa chỉ IP thật của bạn trong các cuộc gọi Instagram Direct',
     },
     'global.stripFbclid': {
-      label: 'Xóa mã theo dõi fbclid',
-      description: 'Gỡ bỏ tham số định danh theo dõi fbclid khỏi các liên kết bạn bấm vào',
+      label: 'Xóa tham số theo dõi URL',
+      description: 'Tự động gỡ bỏ các mã định danh theo dõi (fbclid, igshid, utm_*, si, gclid) khỏi các liên kết',
     },
     'global.blockMetaPixel': {
       label: 'Chặn mã theo dõi Meta Pixel',

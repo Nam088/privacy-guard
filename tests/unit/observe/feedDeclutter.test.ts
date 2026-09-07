@@ -630,5 +630,107 @@ describe('feedDeclutter', () => {
 
       cleanup();
     });
+
+    it('handles modern Facebook Comet feed structures without data-pagelet or role=feed', async () => {
+      const cleanup = installFeedDeclutterHook(window, {
+        isSponsoredActive: () => true,
+        isSuggestedActive: () => true,
+        isReelsActive: () => true,
+      });
+
+      // Modern Comet feed under [role="main"]
+      const main = document.createElement('div');
+      main.setAttribute('role', 'main');
+
+      const feedContainer = document.createElement('div');
+
+      // 1. Organic post
+      const organicPost = document.createElement('div');
+      organicPost.className = 'x1lliihq';
+      organicPost.setAttribute('data-virtualized', 'false');
+      organicPost.innerHTML = `
+        <div data-ad-rendering-role="profile_name">
+          <h4><a href="/friend">Friend Name</a></h4>
+        </div>
+        <div>Organic post text</div>
+      `;
+
+      // 2. Suggested post with Follow button
+      const suggestedPost = document.createElement('div');
+      suggestedPost.className = 'x1lliihq';
+      suggestedPost.setAttribute('data-virtualized', 'false');
+      suggestedPost.innerHTML = `
+        <div data-ad-rendering-role="profile_name">
+          <h4>
+            <a href="/page">Page Name</a>
+            <button>Theo dõi</button>
+          </h4>
+        </div>
+        <div>Suggested post text</div>
+      `;
+
+      // 3. Reels tray
+      const reelsTray = document.createElement('div');
+      reelsTray.className = 'x1lliihq';
+      reelsTray.setAttribute('data-virtualized', 'false');
+      reelsTray.innerHTML = `
+        <div>
+          <a href="/reel/1039423032058324/?s=ifu">Watch Reel</a>
+        </div>
+      `;
+
+      feedContainer.appendChild(organicPost);
+      feedContainer.appendChild(suggestedPost);
+      feedContainer.appendChild(reelsTray);
+      main.appendChild(feedContainer);
+      container.appendChild(main);
+
+      // Modern Right Rail with Sponsored Ads & Birthdays
+      const rightRail = document.createElement('div');
+      rightRail.id = 'right_rail_container';
+      rightRail.setAttribute('role', 'complementary');
+
+      const sponsoredAdCard = document.createElement('div');
+      sponsoredAdCard.innerHTML = `
+        <span>Được tài trợ</span>
+        <a href="https://l.facebook.com/l.php?u=example" target="rhcad3" attributionsrc="">Ad Link</a>
+      `;
+
+      const birthdayCard = document.createElement('div');
+      birthdayCard.innerHTML = `
+        <span>Sinh nhật</span>
+        <a href="/events/birthdays/">Friend Birthday</a>
+      `;
+
+      rightRail.appendChild(sponsoredAdCard);
+      rightRail.appendChild(birthdayCard);
+      container.appendChild(rightRail);
+
+      // Sidebar navigation with Reel tab shortcut (must NEVER be hidden)
+      const nav = document.createElement('nav');
+      nav.setAttribute('role', 'navigation');
+      nav.innerHTML = '<a href="/reel/?s=tab">Thước phim</a>';
+      container.appendChild(nav);
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Organic post must stay visible
+      expect(organicPost.classList.contains(DECLUTTER_HIDDEN_CLASS)).toBe(false);
+      expect(organicPost.classList.contains(SUGGESTED_HIDDEN_CLASS)).toBe(false);
+      expect(organicPost.classList.contains(SPONSORED_HIDDEN_CLASS)).toBe(false);
+
+      // Suggested post and Reels tray must be hidden
+      expect(suggestedPost.classList.contains(SUGGESTED_HIDDEN_CLASS)).toBe(true);
+      expect(reelsTray.classList.contains(REELS_HIDDEN_CLASS)).toBe(true);
+
+      // Right rail sponsored ad must be hidden, birthday must stay visible
+      expect(sponsoredAdCard.classList.contains(SPONSORED_HIDDEN_CLASS)).toBe(true);
+      expect(birthdayCard.classList.contains(SPONSORED_HIDDEN_CLASS)).toBe(false);
+
+      // Navigation must stay visible
+      expect(nav.classList.contains(REELS_HIDDEN_CLASS)).toBe(false);
+
+      cleanup();
+    });
   });
 });

@@ -23,7 +23,9 @@ import {
   isLinkShimUrl,
   unwrapLinkShim,
 } from '@/observe/linkShim';
+import { isDwellTelemetry } from '@/observe/telemetry';
 import { findSiteForUrl } from '@/sites/registry';
+import { isRedundantObservation } from '@/core/observationFilter';
 
 export const OBSERVER_EVENT = 'privacy-guard:observed';
 export const CONFIGURE_EVENT = 'privacy-guard:configure';
@@ -66,6 +68,8 @@ export interface ObserverConfig {
   readonly scrambleDwellTime?: boolean;
   /** Whether Meta Link Shim redirect tracking should be bypassed. */
   readonly bypassLinkShim?: boolean;
+  /** Whether media quick downloader should be enabled. */
+  readonly mediaDownloader?: boolean;
 }
 
 export default defineUnlistedScript(() => {
@@ -94,6 +98,7 @@ export default defineUnlistedScript(() => {
   let dwellTimeScrambled = false;
   let readReceiptsActive = false;
   let linkShimBypassed = false;
+  let mediaDownloaderActive = false;
 
   let isFacebookSite = false;
   let isInstagramSite = false;
@@ -144,6 +149,7 @@ export default defineUnlistedScript(() => {
       voicePlayedActive = Boolean(detail.hideVoicePlayed);
       dwellTimeScrambled = Boolean(detail.scrambleDwellTime);
       linkShimBypassed = Boolean(detail.bypassLinkShim);
+      mediaDownloaderActive = Boolean(detail.mediaDownloader);
 
       const readReceiptLabels = detail.readReceiptLabels ?? [];
       const typingLabels = detail.typingLabels ?? [];
@@ -255,6 +261,9 @@ export default defineUnlistedScript(() => {
         return 'drop';
       }
     }
+    if (dwellTimeScrambled && isDwellTelemetry(url, body)) {
+      return 'drop';
+    }
     return 'pass';
   }
 
@@ -297,6 +306,9 @@ export default defineUnlistedScript(() => {
   installObservers(
     window as unknown as Parameters<typeof installObservers>[0],
     (event: ObservedEvent, raw?: unknown) => {
+      if (isRedundantObservation(event, raw)) {
+        return;
+      }
       if (capturing) {
         attachPayload(event, raw);
       }
@@ -329,6 +341,7 @@ export default defineUnlistedScript(() => {
       isReelsActive,
       isWebRtcProtected: () => webRtcProtected,
       isDwellTimeScrambled: () => dwellTimeScrambled,
+      isMediaDownloaderActive: () => mediaDownloaderActive,
     },
   );
 });

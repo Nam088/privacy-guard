@@ -31,7 +31,7 @@ export default defineConfig({
       rule_resources: [
         { id: 'meta-pixel', enabled: true, path: 'rules/meta-pixel.json' },
         { id: 'fbclid', enabled: false, path: 'rules/fbclid.json' },
-        { id: 'firefox-csp', enabled: true, path: 'rules/firefox-csp.json' },
+        { id: 'firefox-csp', enabled: browser === 'firefox', path: 'rules/firefox-csp.json' },
       ],
     },
     ...(browser === 'firefox'
@@ -39,7 +39,7 @@ export default defineConfig({
           browser_specific_settings: {
             gecko: {
               id: 'privacy-guard@nam088.dev',
-              strict_min_version: '142.0',
+              strict_min_version: '128.0',
               data_collection_permissions: {
                 required: ['none'],
               },

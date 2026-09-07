@@ -1,11 +1,71 @@
-import { decodeFrame, toBytes } from '@/protocol/dgw/frameDecoder';
+import { findJsonBounds, toBytes } from '@/protocol/dgw/frameDecoder';
+import { reencodeDgwFrame } from '@/protocol/dgw/frameEncoder';
+
+interface PresenceReportingArguments {
+  availability?: number;
+  foregrounded?: boolean;
+  makeUserAvailableWhenInForeground?: boolean;
+  [key: string]: unknown;
+}
+
+interface PresencePayload {
+  payload?: {
+    presenceReportingAmendment?: {
+      reportingArguments?: PresenceReportingArguments;
+      [key: string]: unknown;
+    };
+    presenceReportingRequest?: {
+      availability?: number;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+  presenceReportingRequest?: {
+    availability?: number;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+function neutralizePresenceObject(obj: PresencePayload): boolean {
+  let changed = false;
+
+  const amendArgs = obj.payload?.presenceReportingAmendment?.reportingArguments;
+  if (amendArgs) {
+    if (amendArgs.availability !== 2) {
+      amendArgs.availability = 2;
+      changed = true;
+    }
+    if (amendArgs.foregrounded !== false) {
+      amendArgs.foregrounded = false;
+      changed = true;
+    }
+    if (
+      'makeUserAvailableWhenInForeground' in amendArgs &&
+      amendArgs.makeUserAvailableWhenInForeground !== false
+    ) {
+      amendArgs.makeUserAvailableWhenInForeground = false;
+      changed = true;
+    }
+  }
+
+  for (const req of [obj.payload?.presenceReportingRequest, obj.presenceReportingRequest]) {
+    if (req && req.availability === 1) {
+      req.availability = 2;
+      changed = true;
+    }
+  }
+
+  return changed;
+}
 
 /**
- * Transforms presenceReportingAmendment frames to force offline/away status.
+ * Transforms presenceReportingAmendment and presenceReportingRequest frames to force offline/away status.
  *
  * Availability:
  * 1 = Active / Online (triggers green dot)
  * 2 = Away / Inactive / Offline (hides green dot)
+ * 3 = Offline
  * Foregrounded:
  * true = Tab focused / typing
  * false = Tab blurred / backgrounded
@@ -17,14 +77,15 @@ export function transformStreamControllerPresence(url: string, data: unknown): u
 
   // Handle string payload
   if (typeof data === 'string') {
-    if (!data.includes('presenceReportingAmendment')) {
+    if (
+      !data.includes('presenceReportingAmendment') &&
+      !data.includes('presenceReportingRequest')
+    ) {
       return data;
     }
     try {
-      const json = JSON.parse(data);
-      if (json?.payload?.presenceReportingAmendment?.reportingArguments) {
-        json.payload.presenceReportingAmendment.reportingArguments.availability = 2;
-        json.payload.presenceReportingAmendment.reportingArguments.foregrounded = false;
+      const json = JSON.parse(data) as PresencePayload;
+      if (neutralizePresenceObject(json)) {
         return JSON.stringify(json);
       }
     } catch {
@@ -39,52 +100,26 @@ export function transformStreamControllerPresence(url: string, data: unknown): u
     return data;
   }
 
-  const decoded = decodeFrame(bytes);
-  if (
-    !decoded ||
-    typeof decoded !== 'object' ||
-    !(decoded as Record<string, unknown>).payload
-  ) {
+  const bounds = findJsonBounds(bytes);
+  if (!bounds) {
     return data;
   }
 
-  const root = decoded as {
-    payload?: {
-      presenceReportingAmendment?: {
-        reportingArguments?: {
-          availability?: number;
-          foregrounded?: boolean;
-          [key: string]: unknown;
-        };
-      };
-    };
-  };
-
-  const args = root.payload?.presenceReportingAmendment?.reportingArguments;
-  if (!args) {
+  let decoded: PresencePayload;
+  try {
+    const jsonStr = new TextDecoder().decode(bytes.subarray(bounds.start, bounds.end));
+    decoded = JSON.parse(jsonStr) as PresencePayload;
+  } catch {
     return data;
   }
 
-  args.availability = 2;
-  args.foregrounded = false;
+  if (!decoded || typeof decoded !== 'object' || !neutralizePresenceObject(decoded)) {
+    return data;
+  }
 
   try {
-    let jsonStart = -1;
-    for (let i = 0; i < bytes.length; i += 1) {
-      if (bytes[i] === 0x7b) {
-        jsonStart = i;
-        break;
-      }
-    }
-    if (jsonStart === -1) {
-      return data;
-    }
-
-    const modifiedJsonBytes = new TextEncoder().encode(JSON.stringify(root));
-    const headerBytes = bytes.subarray(0, jsonStart);
-    const result = new Uint8Array(headerBytes.length + modifiedJsonBytes.length);
-    result.set(headerBytes, 0);
-    result.set(modifiedJsonBytes, headerBytes.length);
+    const modifiedJsonBytes = new TextEncoder().encode(JSON.stringify(decoded));
+    const result = reencodeDgwFrame(bytes, modifiedJsonBytes, bounds.start, bounds.end);
 
     if (data instanceof ArrayBuffer) {
       return result.buffer;

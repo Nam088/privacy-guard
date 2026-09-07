@@ -4,6 +4,8 @@ export type FetchVerdict = 'pass' | 'drop';
 
 export type InterceptFetch = (url: string, body?: unknown) => FetchVerdict;
 
+export type NetworkResponseCallback = (url: string, responseText: string) => void;
+
 interface FetchScope {
   fetch?: typeof fetch;
 }
@@ -22,7 +24,9 @@ export function observeFetch(
   report: Report,
   frameUrl?: string,
   intercept?: InterceptFetch,
+  onResponse?: NetworkResponseCallback,
 ): () => void {
+
   let originalFetch: typeof fetch | undefined;
   try {
     originalFetch = scope.fetch;
@@ -79,8 +83,27 @@ export function observeFetch(
       return Promise.resolve(syntheticResponse());
     }
 
-    return originalFetch!.call(this, input, init);
+    const result = originalFetch!.call(this, input, init);
+    if (onResponse && url) {
+      result
+        .then((resp) => {
+          try {
+            if (!resp.bodyUsed && (url.includes('/api/graphql/') || url.includes('/video/'))) {
+              resp
+                .clone()
+                .text()
+                .then((text) => onResponse(url, text))
+                .catch(() => {});
+            }
+          } catch {
+            // Observation must never break fetch
+          }
+        })
+        .catch(() => {});
+    }
+    return result;
   }
+
 
   function patchedFetch(
     this: unknown,

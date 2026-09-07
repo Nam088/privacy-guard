@@ -72,3 +72,7 @@ export async function setMasterEnabled(value: boolean): Promise<void> {
 export async function setLocale(value: 'auto' | 'en' | 'vi'): Promise<void> {
   await commit({ ...settings.value, locale: value });
 }
+
+export async function setTheme(value: 'system' | 'light' | 'dark'): Promise<void> {
+  await commit({ ...settings.value, theme: value });
+}

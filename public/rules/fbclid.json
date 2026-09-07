@@ -7,7 +7,20 @@
       "redirect": {
         "transform": {
           "queryTransform": {
-            "removeParams": ["fbclid"]
+            "removeParams": [
+              "fbclid",
+              "igshid",
+              "gclid",
+              "utm_source",
+              "utm_medium",
+              "utm_campaign",
+              "utm_term",
+              "utm_content",
+              "si",
+              "mc_eid",
+              "dclid",
+              "msclkid"
+            ]
           }
         }
       }
@@ -15,7 +28,135 @@
     "condition": {
       "urlFilter": "fbclid=",
       "resourceTypes": ["main_frame", "sub_frame"],
-      "excludedInitiatorDomains": ["facebook.com", "messenger.com", "instagram.com"]
+      "excludedRequestDomains": ["facebook.com", "messenger.com", "instagram.com"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "transform": {
+          "queryTransform": {
+            "removeParams": [
+              "fbclid",
+              "igshid",
+              "gclid",
+              "utm_source",
+              "utm_medium",
+              "utm_campaign",
+              "utm_term",
+              "utm_content",
+              "si",
+              "mc_eid",
+              "dclid",
+              "msclkid"
+            ]
+          }
+        }
+      }
+    },
+    "condition": {
+      "urlFilter": "igshid=",
+      "resourceTypes": ["main_frame", "sub_frame"],
+      "excludedRequestDomains": ["facebook.com", "messenger.com", "instagram.com"]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "transform": {
+          "queryTransform": {
+            "removeParams": [
+              "fbclid",
+              "igshid",
+              "gclid",
+              "utm_source",
+              "utm_medium",
+              "utm_campaign",
+              "utm_term",
+              "utm_content",
+              "si",
+              "mc_eid",
+              "dclid",
+              "msclkid"
+            ]
+          }
+        }
+      }
+    },
+    "condition": {
+      "urlFilter": "utm_source=",
+      "resourceTypes": ["main_frame", "sub_frame"],
+      "excludedRequestDomains": ["facebook.com", "messenger.com", "instagram.com"]
+    }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "transform": {
+          "queryTransform": {
+            "removeParams": [
+              "fbclid",
+              "igshid",
+              "gclid",
+              "utm_source",
+              "utm_medium",
+              "utm_campaign",
+              "utm_term",
+              "utm_content",
+              "si",
+              "mc_eid",
+              "dclid",
+              "msclkid"
+            ]
+          }
+        }
+      }
+    },
+    "condition": {
+      "urlFilter": "gclid=",
+      "resourceTypes": ["main_frame", "sub_frame"],
+      "excludedRequestDomains": ["facebook.com", "messenger.com", "instagram.com"]
+    }
+  },
+  {
+    "id": 5,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "transform": {
+          "queryTransform": {
+            "removeParams": [
+              "fbclid",
+              "igshid",
+              "gclid",
+              "utm_source",
+              "utm_medium",
+              "utm_campaign",
+              "utm_term",
+              "utm_content",
+              "si",
+              "mc_eid",
+              "dclid",
+              "msclkid"
+            ]
+          }
+        }
+      }
+    },
+    "condition": {
+      "urlFilter": "si=",
+      "resourceTypes": ["main_frame", "sub_frame"],
+      "excludedRequestDomains": ["facebook.com", "messenger.com", "instagram.com"]
     }
   }
 ]

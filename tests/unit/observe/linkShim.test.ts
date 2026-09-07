@@ -38,6 +38,18 @@ describe('linkShim', () => {
       expect(unwrapLinkShim(shim)).toBe('https://vnexpress.net/tin-tuc?ref=fb');
     });
 
+    it('strips fbclid tracking parameter from target URL', () => {
+      const shim =
+        'https://l.facebook.com/l.php?u=https%3A%2F%2Fvnexpress.net%2Ftin-tuc%3Ffbclid%3DIwAR123%26ref%3Dfb&h=AT0123';
+      expect(unwrapLinkShim(shim)).toBe('https://vnexpress.net/tin-tuc?ref=fb');
+    });
+
+    it('strips expanded tracking parameters (igshid, utm_*, si, gclid) from target URL', () => {
+      const shim =
+        'https://l.facebook.com/l.php?u=https%3A%2F%2Fexample.com%2Fpost%3Figshid%3D123%26utm_source%3Dig%26utm_medium%3Dsocial%26si%3Dxyz%26gclid%3Dabc%26keep%3D1&h=AT0123';
+      expect(unwrapLinkShim(shim)).toBe('https://example.com/post?keep=1');
+    });
+
     it('rejects unsafe protocols (XSS protection)', () => {
       expect(
         unwrapLinkShim('https://l.facebook.com/l.php?u=javascript%3Aalert%281%29'),

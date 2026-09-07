@@ -11,9 +11,10 @@ import {
   decideByOperationNames,
   parseGraphQLUrl,
 } from './graphqlRequest';
+import { collectWorkerActions, isOutboundMessagePayload } from '@/sites/workerUtil';
 
 const READ_RECEIPT_MUTATION_PATTERN =
-  /readreceipt|markthreadread|mercurythreadmarkread|threadmarkread|readwatermark/i;
+  /readreceipt|mark.*thread.*read|mercurythreadmarkread|threadmarkread|readwatermark|watermark.*mutation|mark.*as.*read/i;
 
 function isReadReceiptOperation(name: string): boolean {
   if (READ_RECEIPT_MUTATION_PATTERN.test(name)) {
@@ -139,37 +140,13 @@ export class FacebookReadReceiptRule implements SuppressionRule, HttpSuppression
       return 'pass';
     }
 
-    const actionCandidates: string[] = [];
-
-    if (Array.isArray(data)) {
-      for (const item of data) {
-        if (typeof item === 'string') {
-          actionCandidates.push(item);
-        }
-      }
-    } else {
-      const rec = data as Record<string, unknown>;
-      const keys = [
-        rec.action,
-        rec.type,
-        rec.name,
-        rec.event,
-        rec.event_name,
-        rec.command,
-        rec.actionType,
-      ];
-      for (const k of keys) {
-        if (typeof k === 'string') {
-          actionCandidates.push(k);
-        }
-      }
-    }
+    const actionCandidates = collectWorkerActions(data);
 
     for (const candidate of actionCandidates) {
       const lowered = candidate.toLowerCase();
       if (
         FACEBOOK_SIGNATURES.readReceiptWorkerActions.some(
-          (action) => lowered === action.toLowerCase(),
+          (action) => lowered === action.toLowerCase() || lowered.includes(action.toLowerCase()),
         )
       ) {
         return 'drop';
@@ -180,67 +157,3 @@ export class FacebookReadReceiptRule implements SuppressionRule, HttpSuppression
   }
 }
 
-function isOutboundMessagePayload(data: unknown): boolean {
-  if (!data || typeof data !== 'object') {
-    return false;
-  }
-  if (Array.isArray(data)) {
-    for (const item of data) {
-      if (typeof item === 'string') {
-        const lower = item.toLowerCase();
-        if (
-          lower === 'sendmessage' ||
-          lower === 'sendtextmessage' ||
-          lower === 'sendmediamessage' ||
-          lower.includes('sendmessage') ||
-          lower.includes('send_message')
-        ) {
-          return true;
-        }
-      } else if (item && typeof item === 'object') {
-        if (isOutboundMessagePayload(item)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  const rec = data as Record<string, unknown>;
-  if (
-    rec.body !== undefined ||
-    rec.text !== undefined ||
-    rec.message !== undefined ||
-    rec.offline_threading_id !== undefined ||
-    rec.message_id !== undefined ||
-    rec.client_context !== undefined
-  ) {
-    return true;
-  }
-
-  const keys = [
-    rec.action,
-    rec.type,
-    rec.name,
-    rec.event,
-    rec.event_name,
-    rec.command,
-    rec.actionType,
-  ];
-  for (const k of keys) {
-    if (typeof k === 'string') {
-      const lower = k.toLowerCase();
-      if (
-        lower === 'sendmessage' ||
-        lower === 'sendtextmessage' ||
-        lower === 'sendmediamessage' ||
-        lower.includes('sendmessage') ||
-        lower.includes('send_message')
-      ) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}

@@ -112,7 +112,10 @@ export function observeWebSocket(
     }, dataToSend);
 
     if (verdict === 'drop') {
-      if (typeof this.url === 'string' && this.url.includes('/ws/lightspeed')) {
+      if (
+        typeof this.url === 'string' &&
+        (this.url.includes('/ws/lightspeed') || this.url.includes('/ws/realtime'))
+      ) {
         readReplayManager.cacheSuppressedReceipt(this.url, data);
       }
       return;

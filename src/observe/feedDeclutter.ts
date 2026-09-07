@@ -19,6 +19,18 @@
  * suggested-post signal — all its values belong to the Sponsored category.
  */
 
+import {
+  MULTI_LANG_SPONSORED_REGEX,
+  MULTI_LANG_SUGGESTED_REGEX,
+  collectFeedUnits,
+  ensureStyleSheet,
+  isFeedContainer,
+  isInstagramAd,
+  isInstagramSuggested,
+} from './feedDeclutterUtil';
+
+export { isFeedContainer };
+
 export const DECLUTTER_SPONSORED_STYLE_ID = 'fb-security-sponsored-style';
 export const DECLUTTER_SUGGESTED_STYLE_ID = 'fb-security-suggested-style';
 export const DECLUTTER_REELS_STYLE_ID = 'fb-security-reels-style';
@@ -41,16 +53,30 @@ div[data-pagelet^="FeedUnit_"]:has([data-ft*='"ei":"sponsored_ad"']),
 div[data-pagelet^="FeedUnit_"]:has(.sponsored_ad),
 div[data-pagelet^="FeedUnit_"]:has(a[href*="#?abf"]),
 
-/* Right Rail Sponsored Ads — Language-Agnostic */
+/* Modern Facebook Comet Feed Post Ads */
+div[class*="x1lliihq"]:has(a[href*="/ads/about"]),
+div[class*="x1lliihq"]:has(a[href*="/about/ads"]),
+div[class*="x1lliihq"]:has(a[href*="ad_id="]),
+
+/* Right Rail Sponsored Ads — Language-Agnostic & Modern Comet */
 div[data-pagelet="RightRail"]:has(a[href*="ad_id="]),
 div[data-pagelet="RightRail"]:has(a[href*="/ads/about"]),
 div[data-pagelet="RightRail"]:has(a[href*="/about/ads"]),
 div[data-pagelet="RightRail"]:has(a[href*="/ad_preferences"]),
+#right_rail_container div:has(> div a[href*="/ads/about"]),
+#right_rail_container div:has(> div a[href*="/about/ads"]),
+#right_rail_container div:has(> div a[href*="ad_id="]),
+#right_rail_container div:has(> div a[target^="rhcad"]),
+[role="complementary"] div:has(> div a[href*="/ads/about"]),
+[role="complementary"] div:has(> div a[href*="ad_id="]),
+[role="complementary"] div:has(> div a[target^="rhcad"]),
 
 /* Instagram Sponsored — Language-Agnostic */
 article:has(a[href*="/ads/about/"]),
 article:has(a[href*="/about/ads/"]),
 article:has(a[href*="paid_partnership"]),
+article:has(a[href*="enable_persistent_cta=true"]),
+article:has(a[href*="a_mpk="]),
 
 .${SPONSORED_HIDDEN_CLASS} {
   display: none !important;
@@ -67,6 +93,8 @@ export const SUGGESTED_CSS = `
 /* Suggested Posts — unfollowed pages/creators (Facebook Comet) */
 div[data-pagelet^="FeedUnit_"]:has([data-ad-rendering-role="profile_name"] h4 [role="button"]),
 div[data-pagelet^="FeedUnit_"]:has([data-ad-rendering-role="profile_name"] h4 button),
+div[class*="x1lliihq"]:has([data-ad-rendering-role="profile_name"] h4 [role="button"]),
+div[class*="x1lliihq"]:has([data-ad-rendering-role="profile_name"] h4 button),
 
 /* Instagram Suggested */
 article:has(a[href*="suggested"]),
@@ -89,6 +117,8 @@ div[data-pagelet^="FeedUnit_"]:has(a[href*="/reel/"]),
 div[data-pagelet^="FeedUnit_"]:has(a[href*="/reels/"]),
 div[data-pagelet^="FeedUnit_"]:has([data-pagelet*="Reels"]),
 div[data-pagelet^="FeedUnit_"]:has([data-pagelet*="ShortVideos"]),
+div[class*="x1lliihq"]:has(a[href*="/reel/"]),
+div[class*="x1lliihq"]:has(a[href*="/reels/"]),
 
 /* Instagram Reels */
 article:has(a[href^="/reel/"]),
@@ -120,43 +150,6 @@ const DECLUTTER_CLASS_CSS = `
 `;
 
 /**
- * Checks whether an element is an outer feed container.
- * Feed containers must NEVER be hidden, even if their subtree contains sponsored posts.
- */
-export function isFeedContainer(element: Element): boolean {
-  if (!element || typeof element.getAttribute !== 'function') {
-    return false;
-  }
-  const role = element.getAttribute('role');
-  if (role === 'feed' || role === 'main') {
-    return true;
-  }
-  if (element.getAttribute('data-virtualized') !== null) {
-    return true;
-  }
-  if (element.getAttribute('data-pagelet') === 'Feed') {
-    return true;
-  }
-  if (element.querySelectorAll('div[data-pagelet^="FeedUnit_"]').length > 1) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * Checks whether a feed unit element is a sponsored advertisement.
- * Completely language-independent.
- */
-// Multi-language WCAG sponsored accessibility keywords
-// Supported: en (Sponsored), vi (Được tài trợ), fr (Sponsorisé), es/pt (Patrocinado, Publicidad),
-// de (Gesponsert), it (Sponsorizzato), ru (Реклама), ja (広告), ko (광고, 스폰서), zh (贊助, 赞助),
-// ar (مُموَّل), th (ได้รับการสนับสนุน), id (Bersponsor), nl (Gesponsord), pl (Sponsorowane), tr (Sponsorlu), hi (प्रायोजित)
-const MULTI_LANG_SPONSORED_REGEX = /(?:^|\s|\b|[\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af])(?:sponsored|được tài trợ|nội dung được tài trợ|nhà quảng cáo|advertiser|sponsorisé|patrocinado|publicidad|gesponsert|sponsorizzato|sponsorlu|bersponsor|sponsorowane|gesponsord|sponsrad|реклама|مُموَّل|贊助|赞助|広告|광고|스폰서|ได้รับการสนับสนุน|प्रायोजित)(?:$|\s|\b|[\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af])/i;
-
-// Multi-language recommendation labels in feed metadata
-const MULTI_LANG_SUGGESTED_REGEX = /(?:gợi ý cho bạn|suggested for you|recommandé|suggestions pour vous|sugerencias para ti|sugestões para você|vorschläge für dich|consigliato|recomendado|おすすめ|为你推荐|為你推薦|추천|рекомендуемое|ditampilkan untuk anda|önerilen|podpowiadane)/i;
-
-/**
  * Checks whether a feed unit element is a sponsored advertisement.
  * Primary detection is completely language-independent (Meta URLs and protocol markers),
  * with multi-language accessibility label fallbacks.
@@ -174,8 +167,10 @@ export function isSponsoredPost(element: Element): boolean {
     return true;
   }
 
-  // 2. Outbound advertising clickthrough tracking query parameter (100% language-agnostic)
-  const adTrackingLink = element.querySelector('a[href*="ad_id="]');
+  // 2. Outbound advertising clickthrough tracking query parameter & attributes (100% language-agnostic)
+  const adTrackingLink = element.querySelector(
+    'a[href*="ad_id="], a[href*="ad_id%3D"], a[target^="rhcad"], a[attributionsrc]',
+  );
   if (adTrackingLink) {
     return true;
   }
@@ -198,9 +193,8 @@ export function isSponsoredPost(element: Element): boolean {
     return true;
   }
 
-  // 6. Instagram Paid Partnership links (100% language-agnostic)
-  const paidPartnership = element.querySelector('a[href*="paid_partnership"]');
-  if (paidPartnership) {
+  // 6. Instagram Ads & Paid Partnership (100% language-agnostic)
+  if (isInstagramAd(element)) {
     return true;
   }
 
@@ -213,6 +207,13 @@ export function isSponsoredPost(element: Element): boolean {
       if (label && MULTI_LANG_SPONSORED_REGEX.test(label)) {
         return true;
       }
+    }
+  }
+
+  // 8. Text content matching sponsored heading in right rail or ad card
+  if (element.closest('#right_rail_container, [role="complementary"]')) {
+    if (MULTI_LANG_SPONSORED_REGEX.test(element.textContent || '')) {
+      return true;
     }
   }
 
@@ -240,7 +241,12 @@ export function isSuggestedPost(element: Element): boolean {
     return false;
   }
 
-  // 1. Type 1: Unfollowed page with Follow/Subscribe button in profile header h4 (language-agnostic)
+  // 1. Instagram algorithmic suggested posts (unfollowed accounts with Follow button)
+  if (isInstagramSuggested(element)) {
+    return true;
+  }
+
+  // 2. Type 1: Unfollowed page with Follow/Subscribe button in profile header h4 (language-agnostic)
   const profileHeader = element.querySelector('[data-ad-rendering-role="profile_name"] h4');
   if (profileHeader) {
     const followAction = profileHeader.querySelector('[role="button"], button');
@@ -249,9 +255,18 @@ export function isSuggestedPost(element: Element): boolean {
     }
   }
 
-  // 2. Type 2: Multi-language recommendation label in the metadata row
+  // 2. Button with Follow/Theo dõi/Tham gia inside profile_name container
   const profileNameEl = element.querySelector('[data-ad-rendering-role="profile_name"]');
   if (profileNameEl) {
+    const followButton = profileNameEl.querySelector('[role="button"], button');
+    if (followButton) {
+      const btnText = followButton.textContent ?? '';
+      if (/(?:follow|theo dõi|tham gia|join|abonnieren|s'abonner|seguir)/i.test(btnText)) {
+        return true;
+      }
+    }
+
+    // 3. Type 2: Multi-language recommendation label in the metadata row
     const metadataRow = profileNameEl.parentElement?.parentElement?.nextElementSibling;
     if (metadataRow) {
       const metaText = metadataRow.textContent ?? '';
@@ -272,10 +287,20 @@ export function isReelsPost(element: Element): boolean {
     return false;
   }
 
-  const reelLink = element.querySelector('a[href*="/reel/"], a[href*="/reels/"]');
-  if (reelLink) {
-    return true;
+  // Guard against sidebar/navigation links and non-feed items
+  if (element.closest('nav, [role="navigation"], [role="banner"], header')) {
+    return false;
   }
+
+  const reelLinks = element.querySelectorAll('a[href*="/reel/"], a[href*="/reels/"]');
+  for (let i = 0; i < reelLinks.length; i += 1) {
+    const link = reelLinks[i];
+    const href = link?.getAttribute('href') || '';
+    if (!href.includes('/reel/?')) {
+      return true;
+    }
+  }
+
   const pageletAttr = element.getAttribute('data-pagelet');
   if (pageletAttr) {
     if (pageletAttr.includes('Reels') || pageletAttr.includes('ShortVideos')) {
@@ -352,26 +377,16 @@ function resolvePredicates(options: FeedDeclutterPredicate): {
   };
 }
 
-function ensureStyleSheet(
-  doc: Document,
-  styleId: string,
-  cssContent: string,
-): HTMLStyleElement | null {
-  let styleEl = doc.getElementById(styleId) as HTMLStyleElement | null;
-  if (!styleEl) {
-    styleEl = doc.createElement('style');
-    styleEl.id = styleId;
-    styleEl.textContent = cssContent;
-    const targetHead = doc.head || doc.documentElement;
-    if (targetHead) {
-      targetHead.appendChild(styleEl);
-    }
-  }
-  return styleEl;
+interface UnitClassification {
+  sponsored?: boolean;
+  suggested?: boolean;
+  reels?: boolean;
 }
 
+const CLASSIFICATION_CACHE = new WeakMap<Element, UnitClassification>();
+
 /**
- * Sweeps the DOM and applies hidden classes to unwanted feed units based on active modes.
+ * Sweeps the current DOM and applies/removes hidden classes according to active preferences.
  */
 function sweepFeed(
   doc: Document,
@@ -403,9 +418,7 @@ function sweepFeed(
     legacyStyle.disabled = !(sponsoredOn || suggestedOn || reelsOn);
   }
 
-  const feedUnits = doc.querySelectorAll(
-    'div[data-pagelet^="FeedUnit_"], div[role="feed"] > div, div[data-pagelet="RightRail"], article',
-  );
+  const feedUnits = collectFeedUnits(doc);
   for (let i = 0; i < feedUnits.length; i += 1) {
     const unit = feedUnits[i];
     if (unit) {
@@ -417,9 +430,25 @@ function sweepFeed(
         continue;
       }
 
-      const isSponsored = isSponsoredPost(unit);
-      const isSuggested = isSuggestedPost(unit);
-      const isReels = isReelsPost(unit);
+      let cached = CLASSIFICATION_CACHE.get(unit);
+      if (!cached) {
+        cached = {};
+        CLASSIFICATION_CACHE.set(unit, cached);
+      }
+
+      if (cached.sponsored === undefined) {
+        cached.sponsored = isSponsoredPost(unit);
+      }
+      if (cached.suggested === undefined) {
+        cached.suggested = isSuggestedPost(unit);
+      }
+      if (cached.reels === undefined) {
+        cached.reels = isReelsPost(unit);
+      }
+
+      const isSponsored = cached.sponsored;
+      const isSuggested = cached.suggested;
+      const isReels = cached.reels;
 
       if (sponsoredOn && isSponsored) {
         unit.classList.add(SPONSORED_HIDDEN_CLASS);
@@ -522,18 +551,47 @@ export function installFeedDeclutterHook(
     }
   }
 
-  // Periodic safety check for state toggle transitions
+  // State change detector: only sweeps DOM if predicate return values actually changed
+  let lastSponsoredOn = isSponsored();
+  let lastSuggestedOn = isSuggested();
+  let lastReelsOn = isReels();
+
   let checkInterval: ReturnType<typeof setInterval> | null = null;
   if (typeof setInterval === 'function') {
     checkInterval = setInterval(() => {
-      sweepFeed(doc, isSponsored, isSuggested, isReels);
+      const sp = isSponsored();
+      const sg = isSuggested();
+      const rl = isReels();
+      if (sp !== lastSponsoredOn || sg !== lastSuggestedOn || rl !== lastReelsOn) {
+        lastSponsoredOn = sp;
+        lastSuggestedOn = sg;
+        lastReelsOn = rl;
+        sweepFeed(doc, isSponsored, isSuggested, isReels);
+      }
     }, 50);
+  }
+
+  const onConfigureEvent = () => {
+    lastSponsoredOn = isSponsored();
+    lastSuggestedOn = isSuggested();
+    lastReelsOn = isReels();
+    sweepFeed(doc, isSponsored, isSuggested, isReels);
+  };
+  try {
+    doc.addEventListener('privacy-guard:configure', onConfigureEvent);
+  } catch {
+    // Ignore
   }
 
   // 4. Return clean teardown function
   return () => {
     if (checkInterval) {
       clearInterval(checkInterval);
+    }
+    try {
+      doc.removeEventListener('privacy-guard:configure', onConfigureEvent);
+    } catch {
+      // Ignore
     }
     if (observer) {
       observer.disconnect();

@@ -36,13 +36,15 @@ async function openPopup() {
 
 test('shows the global section on an unsupported site', async () => {
   const page = await openPopup();
-  await expect(page.getByText('All websites')).toBeVisible();
-  await expect(page.getByText('Block Meta tracking pixels')).toBeVisible();
+  await page.getByRole('button', { name: 'Global' }).click();
+  await expect(page.locator('#master-switch')).toBeAttached();
+  await expect(page.getByRole('switch')).toHaveCount(3);
   await page.close();
 });
 
 test('has the master switch plus the two global toggles', async () => {
   const page = await openPopup();
+  await page.getByRole('button', { name: 'Global' }).click();
   await expect(page.getByRole('switch')).toHaveCount(3);
   await page.close();
 });
@@ -50,12 +52,12 @@ test('has the master switch plus the two global toggles', async () => {
 test('pausing protection disables every other toggle', async () => {
   const page = await openPopup();
 
-  await page.getByRole('switch').first().uncheck({ force: true });
+  await page.locator('label[for="master-switch"]').click();
 
-  await expect(page.getByText('Protection paused')).toBeVisible();
+  await expect(page.locator('#master-switch')).not.toBeChecked();
   await expect(page.getByRole('switch').nth(1)).toBeDisabled();
 
-  await page.getByRole('switch').first().check({ force: true });
+  await page.locator('label[for="master-switch"]').click();
   await page.close();
 });
 

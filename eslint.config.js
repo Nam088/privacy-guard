@@ -21,7 +21,7 @@ const EXTENSION_API_IMPORTS = [
 ];
 
 export default tseslint.config(
-  { ignores: ['.wxt/**', '.output/**', 'node_modules/**', 'scratch/**'] },
+  { ignores: ['.wxt/**', '.output/**', 'node_modules/**', 'scratch/**', 'tools/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

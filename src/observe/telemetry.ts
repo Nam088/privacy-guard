@@ -36,10 +36,23 @@ export function isDwellTelemetryData(data: unknown): boolean {
   return FACEBOOK_SIGNATURES.dwellTimeKeywords.some((kw) => lower.includes(kw));
 }
 
-function isDwellTelemetry(url: string, data?: unknown): boolean {
+export function isDwellTelemetry(url: string, data?: unknown): boolean {
   if (url.includes('/ajax/bz') || url.includes('/ajax/browser_metrics')) {
-    if (data instanceof FormData) {
-      return true;
+    if (typeof FormData !== 'undefined' && data instanceof FormData) {
+      try {
+        for (const [key, value] of (data as unknown as Iterable<[string, FormDataEntryValue]>)) {
+          const k = String(key).toLowerCase();
+          if (FACEBOOK_SIGNATURES.dwellTimeKeywords.some((kw) => k.includes(kw))) {
+            return true;
+          }
+          if (typeof value === 'string' && isDwellTelemetryData(value)) {
+            return true;
+          }
+        }
+      } catch {
+        return true;
+      }
+      return false;
     }
     return isDwellTelemetryData(data);
   }

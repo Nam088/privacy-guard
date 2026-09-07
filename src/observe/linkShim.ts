@@ -13,6 +13,21 @@ const LINK_SHIM_HOSTS = [
   'l.instagram.com',
 ] as const;
 
+export const STRIP_TRACKING_PARAMS = [
+  'fbclid',
+  'igshid',
+  'gclid',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'si',
+  'mc_eid',
+  'dclid',
+  'msclkid',
+] as const;
+
 /**
  * Checks if a given URL string or URL object is a Meta Link Shim redirect URL.
  */
@@ -53,6 +68,12 @@ export function unwrapLinkShim(rawUrl: string): string | null {
     const targetParsed = new URL(decoded);
     if (targetParsed.protocol !== 'http:' && targetParsed.protocol !== 'https:') {
       return null;
+    }
+
+    for (const param of STRIP_TRACKING_PARAMS) {
+      if (targetParsed.searchParams.has(param)) {
+        targetParsed.searchParams.delete(param);
+      }
     }
 
     return targetParsed.href;
@@ -113,7 +134,14 @@ export function attachLinkShimBypass(
   };
 
   // Use capturing phase so we unwrap before Facebook's inline or bubbling click listeners
-  const events = ['click', 'auxclick', 'mousedown', 'contextmenu'] as const;
+  const events = [
+    'click',
+    'auxclick',
+    'mousedown',
+    'pointerdown',
+    'contextmenu',
+    'keydown',
+  ] as const;
   for (const ev of events) {
     try {
       doc.addEventListener(ev, handler, true);

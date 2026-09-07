@@ -251,5 +251,58 @@ describe('FacebookTypingRule', () => {
       const context = new LazyInterceptContext('wss://gateway.facebook.com/ws/realtime', bytes);
       expect(rule.evaluate(context)).toBeNull();
     });
+
+    it('drops Armadillo Web RPC request array carrying sendChatStateFromComposer when typing', () => {
+      const payload = [
+        {
+          type: 'request',
+          content: {
+            requestId: 'req_123',
+            namespace: 'backend',
+            name: 'sendChatStateFromComposer',
+            arg: { threadId: '100026113054815@msgr', state: 1 },
+          },
+        },
+      ];
+      expect(rule.evaluateWorker(payload)).toBe('drop');
+    });
+
+    it('passes Armadillo Web RPC request array carrying stop state (state 0)', () => {
+      const payload = [
+        {
+          type: 'request',
+          content: {
+            requestId: 'req_124',
+            namespace: 'backend',
+            name: 'sendChatStateFromComposer',
+            arg: { threadId: '100026113054815@msgr', state: 0 },
+          },
+        },
+      ];
+      expect(rule.evaluateWorker(payload)).toBe('pass');
+    });
+
+    it('drops /ws/realtime frames carrying sendChatStateFromComposer typing signals', () => {
+      const payload = JSON.stringify({
+        action: 'sendChatStateFromComposer',
+        state: 1,
+        thread_key: '8482072268488190',
+      });
+      const bytes = new TextEncoder().encode(payload);
+      const context = new LazyInterceptContext('wss://gateway.messenger.com/ws/realtime', bytes);
+      const verdict = rule.evaluate(context);
+      expect(verdict?.action).toBe('drop');
+    });
+
+    it('passes /ws/realtime frames carrying sendChatStateFromComposer stop signals', () => {
+      const payload = JSON.stringify({
+        action: 'sendChatStateFromComposer',
+        state: 0,
+        thread_key: '8482072268488190',
+      });
+      const bytes = new TextEncoder().encode(payload);
+      const context = new LazyInterceptContext('wss://gateway.messenger.com/ws/realtime', bytes);
+      expect(rule.evaluate(context)).toBeNull();
+    });
   });
 });
