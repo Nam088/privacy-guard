@@ -33,6 +33,7 @@ export interface SuppressionConfig {
   readonly hideVoicePlayed?: boolean;
   readonly scrambleDwellTime?: boolean;
   readonly bypassLinkShim?: boolean;
+  readonly stealthSearch?: boolean;
 }
 
 const NOTHING: SuppressionConfig = {
@@ -72,6 +73,7 @@ export function buildSuppressionConfig(
   const isVoicePlayedHiddenOn = isFeatureOn(settings, featureKey(site.id, 'hideVoicePlayed'));
   const isDwellTimeScrambledOn = isFeatureOn(settings, featureKey(site.id, 'scrambleDwellTime'));
   const isLinkShimBypassedOn = isFeatureOn(settings, featureKey(site.id, 'bypassLinkShim'));
+  const isStealthSearchOn = isFeatureOn(settings, featureKey(site.id, 'stealthSearch'));
 
   let readReceiptLabels: readonly string[] = [];
   let readReceiptPaths: readonly string[] = [];
@@ -128,6 +130,7 @@ export function buildSuppressionConfig(
     hideVoicePlayed?: boolean;
     scrambleDwellTime?: boolean;
     bypassLinkShim?: boolean;
+    stealthSearch?: boolean;
   } = {
     readReceiptLabels,
     readReceiptPaths,
@@ -177,6 +180,9 @@ export function buildSuppressionConfig(
   }
   if (isLinkShimBypassedOn) {
     result.bypassLinkShim = true;
+  }
+  if (isStealthSearchOn) {
+    result.stealthSearch = true;
   }
 
   return result;

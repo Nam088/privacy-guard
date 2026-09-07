@@ -111,6 +111,10 @@ export const en: TranslationDictionary = {
       label: 'Bypass Link Shim tracking',
       description: 'Open external links directly without routing through Facebook tracking redirect',
     },
+    'facebook.stealthSearch': {
+      label: 'Stealth search (Zero-trace history)',
+      description: 'Search profiles and pages without saving to recent search history or skewing recommendations',
+    },
     'instagram.hideReadReceipts': {
       label: 'Hide read receipts',
       description: 'Read direct messages without sending a seen marker',
@@ -154,6 +158,10 @@ export const en: TranslationDictionary = {
     'instagram.scrambleDwellTime': {
       label: 'Scramble dwell time tracking',
       description: 'Stop Meta measuring exact seconds spent looking at posts and videos',
+    },
+    'instagram.stealthSearch': {
+      label: 'Stealth search (Zero-trace history)',
+      description: 'Search accounts and tags without recording to recent search history or skewing explore suggestions',
     },
     'global.stripFbclid': {
       label: 'Strip fbclid from links',

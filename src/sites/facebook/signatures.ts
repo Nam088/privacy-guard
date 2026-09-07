@@ -149,4 +149,8 @@ export const FACEBOOK_SIGNATURES = {
     'CometLiveVideoJoinNotificationMutation',
     'LiveVideoViewerTypedLogger',
   ] as readonly string[],
+  searchHistoryMutations: [
+    'CometAddTypeaheadRecentSearchMutation',
+    'addTypeaheadRecentSearchMutation',
+  ] as readonly string[],
 } as const;

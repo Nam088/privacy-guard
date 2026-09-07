@@ -89,4 +89,12 @@ export const INSTAGRAM_FEATURES: readonly Feature[] = [
     status: 'active',
     category: 'feed',
   },
+  {
+    id: 'stealthSearch',
+    label: 'Stealth search (Zero-trace history)',
+    description: 'Search accounts and tags without saving to search history or feed recommendations',
+    defaultEnabled: false,
+    status: 'active',
+    category: 'privacy',
+  },
 ];

@@ -368,6 +368,32 @@ describe('buildSuppressionConfig', () => {
     expect(config.readReceiptPaths).toContain('/ws/realtime');
     expect(config.typingPaths).toContain('/ws/realtime');
   });
+
+  it('grants stealthSearch only when enabled for facebook or instagram', () => {
+    const fbStealth: Settings = {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.stealthSearch': true,
+      },
+    };
+    const fbConfig = buildSuppressionConfig('https://www.facebook.com/search/top?q=test', fbStealth);
+    expect(fbConfig.stealthSearch).toBe(true);
+
+    const igStealth: Settings = {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'instagram.stealthSearch': true,
+      },
+    };
+    const igConfig = buildSuppressionConfig('https://www.instagram.com/explore/', igStealth);
+    expect(igConfig.stealthSearch).toBe(true);
+
+    const defaultFbConfig = buildSuppressionConfig('https://www.facebook.com/', DEFAULT_SETTINGS);
+    expect(defaultFbConfig.stealthSearch).toBeUndefined();
+  });
 });
+
 
 

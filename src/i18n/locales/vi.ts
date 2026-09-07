@@ -111,6 +111,10 @@ export const vi: TranslationDictionary = {
       label: 'Bỏ qua chuyển hướng theo dõi (Link Shim)',
       description: 'Mở trực tiếp liên kết bên ngoài mà không qua máy chủ theo dõi của Facebook',
     },
+    'facebook.stealthSearch': {
+      label: 'Tìm kiếm vô danh (Không lưu lịch sử)',
+      description: 'Tìm kiếm trang và trang cá nhân mà không lưu vào lịch sử tìm kiếm gần đây hoặc làm lệch gợi ý',
+    },
     'instagram.hideReadReceipts': {
       label: 'Chặn đã xem tin nhắn',
       description: 'Đọc tin nhắn Instagram Direct mà không gửi thông báo đã xem',
@@ -154,6 +158,10 @@ export const vi: TranslationDictionary = {
     'instagram.scrambleDwellTime': {
       label: 'Chặn đo thời gian dừng xem (Dwell Time)',
       description: 'Chặn Instagram đo thời gian bạn dừng lại đọc từng bài viết và video',
+    },
+    'instagram.stealthSearch': {
+      label: 'Tìm kiếm vô danh (Không lưu lịch sử)',
+      description: 'Tìm kiếm tài khoản và thẻ mà không ghi vào lịch sử tìm kiếm gần đây hoặc làm lệch gợi ý khám phá',
     },
     'global.stripFbclid': {
       label: 'Xóa tham số theo dõi URL',

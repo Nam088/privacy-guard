@@ -24,6 +24,7 @@ export interface InstagramSignatures {
   readonly dwellTimePaths: readonly string[];
   readonly dwellTimeKeywords: readonly string[];
   readonly dwellTimeMutations: readonly string[];
+  readonly searchHistoryMutations: readonly string[];
 }
 
 export const INSTAGRAM_SIGNATURES: InstagramSignatures = {
@@ -110,5 +111,8 @@ export const INSTAGRAM_SIGNATURES: InstagramSignatures = {
     'PolarisFeedVPVDQuery',
     'PolarisDwellTimeMutation',
     'FalcoServer',
+  ] as readonly string[],
+  searchHistoryMutations: [
+    'usePolarisRegisterInRecentSearchesMutation',
   ] as readonly string[],
 };

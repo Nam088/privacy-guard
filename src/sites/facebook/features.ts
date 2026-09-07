@@ -116,4 +116,12 @@ export const FACEBOOK_FEATURES: readonly Feature[] = [
     status: 'active',
     category: 'privacy',
   },
+  {
+    id: 'stealthSearch',
+    label: 'Stealth search (Zero-trace history)',
+    description: 'Search people and profiles without saving to recent searches or skewing recommendations',
+    defaultEnabled: false,
+    status: 'active',
+    category: 'privacy',
+  },
 ];

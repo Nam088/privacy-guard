@@ -8,6 +8,7 @@ import {
   FacebookInboxWatermarkRule,
   FacebookLiveStreamViewsRule,
   FacebookReadReceiptRule,
+  FacebookSearchHistoryRule,
   FacebookStoryViewsRule,
   FacebookTypingRule,
   FacebookVoiceMemoRule,
@@ -15,6 +16,7 @@ import {
 import {
   InstagramLiveStreamViewsRule,
   InstagramReadReceiptRule,
+  InstagramSearchHistoryRule,
   InstagramStoryViewsRule,
   InstagramTypingRule,
 } from '@/sites/instagram/rules';
@@ -72,6 +74,8 @@ export interface ObserverConfig {
   readonly scrambleDwellTime?: boolean;
   /** Whether Meta Link Shim redirect tracking should be bypassed. */
   readonly bypassLinkShim?: boolean;
+  /** Whether search history tracking and recommendations skew should be suppressed. */
+  readonly stealthSearch?: boolean;
 }
 
 export default defineUnlistedScript(() => {
@@ -84,11 +88,13 @@ export default defineUnlistedScript(() => {
   const voiceMemoRule = new FacebookVoiceMemoRule();
   const typingHttpRule = new FacebookTypingRule();
   const readReceiptHttpRule = new FacebookReadReceiptRule();
+  const searchRule = new FacebookSearchHistoryRule();
 
   const igStoryRule = new InstagramStoryViewsRule();
   const igLiveStreamRule = new InstagramLiveStreamViewsRule();
   const igTypingRule = new InstagramTypingRule();
   const igReadReceiptRule = new InstagramReadReceiptRule();
+  const igSearchRule = new InstagramSearchHistoryRule();
 
   let storyViewsActive = false;
   let liveStreamViewsActive = false;
@@ -103,6 +109,7 @@ export default defineUnlistedScript(() => {
   let dwellTimeScrambled = false;
   let readReceiptsActive = false;
   let linkShimBypassed = false;
+  let stealthSearchActive = false;
 
   let isFacebookSite = false;
   let isInstagramSite = false;
@@ -154,6 +161,7 @@ export default defineUnlistedScript(() => {
       voicePlayedActive = Boolean(detail.hideVoicePlayed);
       dwellTimeScrambled = Boolean(detail.scrambleDwellTime);
       linkShimBypassed = Boolean(detail.bypassLinkShim);
+      stealthSearchActive = Boolean(detail.stealthSearch);
 
       const readReceiptLabels = detail.readReceiptLabels ?? [];
       const typingLabels = detail.typingLabels ?? [];
@@ -248,6 +256,12 @@ export default defineUnlistedScript(() => {
           return 'drop';
         }
       }
+      if (stealthSearchActive) {
+        const searchVerdict = igSearchRule.evaluateHttp(url, body);
+        if (searchVerdict && searchVerdict.action === 'drop') {
+          return 'drop';
+        }
+      }
       return 'pass';
     }
 
@@ -278,6 +292,12 @@ export default defineUnlistedScript(() => {
     if (readReceiptsActive) {
       const readVerdict = readReceiptHttpRule.evaluateHttp(url, body);
       if (readVerdict && readVerdict.action === 'drop') {
+        return 'drop';
+      }
+    }
+    if (stealthSearchActive) {
+      const searchVerdict = searchRule.evaluateHttp(url, body);
+      if (searchVerdict && searchVerdict.action === 'drop') {
         return 'drop';
       }
     }

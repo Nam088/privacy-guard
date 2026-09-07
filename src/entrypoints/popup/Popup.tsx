@@ -33,6 +33,7 @@ import {
   MicOffIcon,
   PauseReloadIcon,
   RadarIcon,
+  SearchSlashIcon,
   ShieldNetworkIcon,
   SparklesSlashIcon,
 } from '@/ui/components/icons';
@@ -77,6 +78,9 @@ function getFeatureIcon(key: string) {
       return <GhostIcon size={15} class="text-pink-500" />;
     case 'facebook.hideInboxLastSeen':
       return <LockCheckIcon size={15} class="text-teal-500" />;
+    case 'facebook.stealthSearch':
+    case 'instagram.stealthSearch':
+      return <SearchSlashIcon size={15} class="text-cyan-500" />;
     case 'global.blockMetaPixel':
       return <RadarIcon size={15} class="text-rose-500" />;
     case 'global.stripFbclid':
