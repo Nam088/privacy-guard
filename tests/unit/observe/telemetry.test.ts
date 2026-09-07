@@ -102,5 +102,74 @@ describe('telemetry dwell time scrambler', () => {
     expect(
       isDwellTelemetry('https://www.facebook.com/ajax/bz', JSON.stringify({ query: 'search' })),
     ).toBe(false);
+
+    // /ajax/bnzai with Banzai q field carrying Falco viewable impression trigger
+    const banzaiForm = new FormData();
+    banzaiForm.append('ts', '1788788351230');
+    banzaiForm.append(
+      'q',
+      JSON.stringify([
+        {
+          trigger: 'falco:comet_metrics_viewable_impression',
+          user: '100094293981804',
+        },
+      ]),
+    );
+    expect(isDwellTelemetry('https://web.facebook.com/ajax/bnzai?__a=1', banzaiForm)).toBe(true);
+
+    // /ajax/bnzai with Banzai q field carrying Falco dwell time trigger
+    const banzaiDwellForm = new FormData();
+    banzaiDwellForm.append(
+      'q',
+      JSON.stringify([
+        {
+          trigger: 'falco:comet_feed_dwell_time',
+          duration_ms: 4500,
+        },
+      ]),
+    );
+    expect(isDwellTelemetry('https://web.facebook.com/ajax/bnzai', banzaiDwellForm)).toBe(true);
+
+    // /ajax/bnzai with unrelated trigger
+    const banzaiOtherForm = new FormData();
+    banzaiOtherForm.append(
+      'q',
+      JSON.stringify([
+        {
+          trigger: 'falco:unrelated_action',
+        },
+      ]),
+    );
+    expect(isDwellTelemetry('https://web.facebook.com/ajax/bnzai', banzaiOtherForm)).toBe(false);
+
+    // Instagram /video/unified_cvc/ inline feed video playback
+    expect(
+      isDwellTelemetry(
+        'https://www.instagram.com/video/unified_cvc/',
+        JSON.stringify({
+          d: {
+            so: 'inline::inline',
+            ps: { s: 'playing', sa: 0 },
+            vi: '3980891522232362564',
+          },
+        }),
+      ),
+    ).toBe(true);
+
+    // Instagram /api/v1/logging/client_events/ with instagram_feed_dwell_time
+    expect(
+      isDwellTelemetry(
+        'https://www.instagram.com/api/v1/logging/client_events/',
+        JSON.stringify({ event: 'instagram_feed_dwell_time', duration: 3200 }),
+      ),
+    ).toBe(true);
+
+    // Facebook /ajax/merlin/dwell/ with feed_vpvd
+    expect(
+      isDwellTelemetry(
+        'https://web.facebook.com/ajax/merlin/dwell/',
+        JSON.stringify({ feed_vpvd: { duration_ms: 2500 } }),
+      ),
+    ).toBe(true);
   });
 });

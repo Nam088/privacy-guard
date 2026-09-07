@@ -219,6 +219,10 @@ export default defineUnlistedScript(() => {
   const interceptReceive = (): 'pass' | 'drop' => 'pass';
 
   function interceptHttp(url: string, body?: unknown): 'pass' | 'drop' {
+    if (dwellTimeScrambled && isDwellTelemetry(url, body)) {
+      return 'drop';
+    }
+
     if (isInstagramSite) {
       if (storyViewsActive) {
         const storyVerdict = igStoryRule.evaluateHttp(url, body);
@@ -276,9 +280,6 @@ export default defineUnlistedScript(() => {
       if (readVerdict && readVerdict.action === 'drop') {
         return 'drop';
       }
-    }
-    if (dwellTimeScrambled && isDwellTelemetry(url, body)) {
-      return 'drop';
     }
     return 'pass';
   }

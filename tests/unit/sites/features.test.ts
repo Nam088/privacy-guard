@@ -73,6 +73,7 @@ describe.each(MODULES)('site module $id', (site) => {
         'hideOnlineStatus',
         'hideSponsoredPosts',
         'protectWebRtcIp',
+        'scrambleDwellTime',
       ],
     };
 

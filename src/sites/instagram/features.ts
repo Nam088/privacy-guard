@@ -81,4 +81,12 @@ export const INSTAGRAM_FEATURES: readonly Feature[] = [
     status: 'active',
     category: 'privacy',
   },
+  {
+    id: 'scrambleDwellTime',
+    label: 'Scramble dwell time tracking',
+    description: 'Stop Meta measuring exact seconds spent looking at posts and videos',
+    defaultEnabled: false,
+    status: 'active',
+    category: 'feed',
+  },
 ];

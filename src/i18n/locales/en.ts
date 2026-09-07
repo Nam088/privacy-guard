@@ -151,6 +151,10 @@ export const en: TranslationDictionary = {
       label: 'WebRTC IP leak shield',
       description: 'Prevent local and public IP exposure during Instagram Direct calls',
     },
+    'instagram.scrambleDwellTime': {
+      label: 'Scramble dwell time tracking',
+      description: 'Stop Meta measuring exact seconds spent looking at posts and videos',
+    },
     'global.stripFbclid': {
       label: 'Strip fbclid from links',
       description: 'Remove fbclid, igshid, utm_*, si, and gclid tracking identifiers from links you click',

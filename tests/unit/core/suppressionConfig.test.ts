@@ -351,6 +351,7 @@ describe('buildSuppressionConfig', () => {
         'instagram.bypassLinkShim': true,
         'instagram.hideSuggestedPosts': true,
         'instagram.hideReels': true,
+        'instagram.scrambleDwellTime': true,
       },
     };
 
@@ -360,6 +361,7 @@ describe('buildSuppressionConfig', () => {
     expect(config.hideStoryViews).toBe(true);
     expect(config.bypassLinkShim).toBe(true);
     expect(config.hideSuggestedPosts).toBe(true);
+    expect(config.scrambleDwellTime).toBe(true);
     // In 2026, Instagram Direct has its own unified DGW labels for LightSpeed
     expect(config.readReceiptLabels).toEqual(['21', '72', '235']);
     expect(config.typingLabels).toEqual(['3']);

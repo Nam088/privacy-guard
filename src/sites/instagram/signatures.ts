@@ -21,6 +21,9 @@ export interface InstagramSignatures {
   readonly readReceiptRestPatterns: readonly RegExp[];
   readonly typingRestPatterns: readonly RegExp[];
   readonly wsHosts: readonly string[];
+  readonly dwellTimePaths: readonly string[];
+  readonly dwellTimeKeywords: readonly string[];
+  readonly dwellTimeMutations: readonly string[];
 }
 
 export const INSTAGRAM_SIGNATURES: InstagramSignatures = {
@@ -81,4 +84,31 @@ export const INSTAGRAM_SIGNATURES: InstagramSignatures = {
     /\/api\/v1\/direct_v2\/threads\/[^/]+\/activity_status_indication\/?/i,
   ],
   wsHosts: ['gateway.instagram.com', 'edge-chat.instagram.com'],
+  dwellTimePaths: [
+    '/video/unified_cvc/',
+    '/video/unified_cvc',
+    '/api/v1/logging/client_events/',
+    '/api/v1/logging/client_events',
+    '/ajax/bz',
+    '/ajax/bnzai',
+    '/ajax/browser_metrics',
+  ] as readonly string[],
+  dwellTimeKeywords: [
+    'instagram_feed_dwell_time',
+    'instagram_feed_vpvd',
+    'instagram_video_playback_duration',
+    'ig_feed_vpv',
+    'vpv_duration',
+    'dwell_time',
+    'timespent',
+    'time_spent',
+    'video_watch_time',
+    'feed_vpvd',
+    'inline::inline',
+  ] as readonly string[],
+  dwellTimeMutations: [
+    'PolarisFeedVPVDQuery',
+    'PolarisDwellTimeMutation',
+    'FalcoServer',
+  ] as readonly string[],
 };

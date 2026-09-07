@@ -53,6 +53,7 @@ function getFeatureIcon(key: string) {
     case 'facebook.blockFeedAutoRefresh':
       return <PauseReloadIcon size={15} class="text-emerald-500" />;
     case 'facebook.scrambleDwellTime':
+    case 'instagram.scrambleDwellTime':
       return <ClockStopIcon size={15} class="text-sky-500" />;
     case 'facebook.bypassLinkShim':
     case 'instagram.bypassLinkShim':

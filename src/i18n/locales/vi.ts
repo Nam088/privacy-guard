@@ -151,6 +151,10 @@ export const vi: TranslationDictionary = {
       label: 'Chống rò rỉ IP qua WebRTC',
       description: 'Ngăn chặn lộ địa chỉ IP thật của bạn trong các cuộc gọi Instagram Direct',
     },
+    'instagram.scrambleDwellTime': {
+      label: 'Chặn đo thời gian dừng xem (Dwell Time)',
+      description: 'Chặn Instagram đo thời gian bạn dừng lại đọc từng bài viết và video',
+    },
     'global.stripFbclid': {
       label: 'Xóa tham số theo dõi URL',
       description: 'Tự động gỡ bỏ các mã định danh theo dõi (fbclid, igshid, utm_*, si, gclid) khỏi các liên kết',

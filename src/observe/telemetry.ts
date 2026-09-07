@@ -13,51 +13,16 @@ export interface TelemetryScope {
 
 const INSTALLED = new WeakSet<object>();
 
-import { FACEBOOK_SIGNATURES } from '@/sites/facebook/signatures';
+export {
+  COMMON_DWELL_KEYWORDS,
+  DWELL_TELEMETRY_PATHS,
+  DWELL_GRAPHQL_OPERATIONS,
+  extractTextFromData,
+  isDwellTelemetryData,
+  isDwellTelemetry,
+} from './dwellTelemetryUtil';
 
-export function isDwellTelemetryData(data: unknown): boolean {
-  if (!data) {
-    return false;
-  }
-  let text = '';
-  if (typeof data === 'string') {
-    text = data;
-  } else if (
-    data instanceof ArrayBuffer ||
-    (typeof data === 'object' && Object.prototype.toString.call(data) === '[object ArrayBuffer]')
-  ) {
-    text = new TextDecoder('utf-8', { fatal: false }).decode(new Uint8Array(data as ArrayBuffer));
-  } else if (ArrayBuffer.isView(data)) {
-    text = new TextDecoder('utf-8', { fatal: false }).decode(
-      new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
-    );
-  }
-  const lower = text.toLowerCase();
-  return FACEBOOK_SIGNATURES.dwellTimeKeywords.some((kw) => lower.includes(kw));
-}
-
-export function isDwellTelemetry(url: string, data?: unknown): boolean {
-  if (url.includes('/ajax/bz') || url.includes('/ajax/browser_metrics')) {
-    if (typeof FormData !== 'undefined' && data instanceof FormData) {
-      try {
-        for (const [key, value] of (data as unknown as Iterable<[string, FormDataEntryValue]>)) {
-          const k = String(key).toLowerCase();
-          if (FACEBOOK_SIGNATURES.dwellTimeKeywords.some((kw) => k.includes(kw))) {
-            return true;
-          }
-          if (typeof value === 'string' && isDwellTelemetryData(value)) {
-            return true;
-          }
-        }
-      } catch {
-        return true;
-      }
-      return false;
-    }
-    return isDwellTelemetryData(data);
-  }
-  return false;
-}
+import { isDwellTelemetry } from './dwellTelemetryUtil';
 
 export function installTelemetryScrambler(
   scope: TelemetryScope,
