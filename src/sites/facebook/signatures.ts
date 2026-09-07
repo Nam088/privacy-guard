@@ -110,4 +110,19 @@ export const FACEBOOK_SIGNATURES = {
     'element_visibility_absolute_ts',
     'web_time_spent_bit_array',
   ] as readonly string[],
+  liveStreamPaths: [
+    '/video/unified_cvc/',
+    '/video/unified_cvc',
+  ] as readonly string[],
+  liveStreamMutations: [
+    'LiveViewerJoinMutation',
+    'useLiveViewerJoinMutation',
+    'LiveVideoViewerStateMutation',
+    'LiveVideoViewerPingMutation',
+    'CometLiveVideoViewerPingMutation',
+    'LiveVideoLogJoinEventMutation',
+    'LiveVideoCometNuxForCVCQuery',
+    'CometLiveVideoJoinNotificationMutation',
+    'LiveVideoViewerTypedLogger',
+  ] as readonly string[],
 } as const;

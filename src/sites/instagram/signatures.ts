@@ -16,6 +16,8 @@ export interface InstagramSignatures {
   readonly typingWorkerActions: readonly string[];
   readonly storySeenRestPatterns: readonly RegExp[];
   readonly storySeenMutations: readonly string[];
+  readonly liveSeenRestPatterns: readonly RegExp[];
+  readonly liveSeenMutations: readonly string[];
   readonly readReceiptRestPatterns: readonly RegExp[];
   readonly typingRestPatterns: readonly RegExp[];
   readonly wsHosts: readonly string[];
@@ -61,6 +63,15 @@ export const INSTAGRAM_SIGNATURES: InstagramSignatures = {
   storySeenMutations: [
     'PolarisStoriesV3SeenMutation',
     'PolarisStoriesSeenMutation',
+  ] as readonly string[],
+  liveSeenRestPatterns: [
+    /\/api\/v1\/live\/[^/]+\/heartbeat_and_get_viewer_count\/?/i,
+    /\/api\/v1\/live\/[^/]+\/join\/?/i,
+  ],
+  liveSeenMutations: [
+    'PolarisLiveViewerJoinMutation',
+    'PolarisLiveHeartbeatMutation',
+    'LiveViewerJoinMutation',
   ] as readonly string[],
   readReceiptRestPatterns: [
     /\/api\/v1\/direct_v2\/threads\/[^/]+\/items\/[^/]+\/seen\/?/i,

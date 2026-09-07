@@ -273,6 +273,23 @@ import readline from 'node:readline';
 
 // Setup Page CDP session & listeners
 async function wirePage(page) {
+  page.on('request', (req) => {
+    const url = req.url();
+    if (url.includes('/api/graphql/') || url.includes('/graphql/')) {
+      const postData = req.postData();
+      if (postData) {
+        const match = postData.match(/fb_api_req_friendly_name=([^&]+)/);
+        if (match) {
+          const name = decodeURIComponent(match[1]);
+          console.log(`\x1b[35m[GRAPHQL] 📡 ${name}\x1b[0m`);
+          logEventToFile({ type: 'graphql', name, timestamp: Date.now() });
+        }
+      }
+    } else if (url.includes('/ajax/bz')) {
+      logEventToFile({ type: 'bz', timestamp: Date.now() });
+    }
+  });
+
   page.on('console', (msg) => {
     const text = msg.text();
     if (text.startsWith('[AGENT-ACTION]')) {
@@ -314,6 +331,8 @@ for (const p of context.pages()) {
   void wirePage(p);
 }
 
+const targetUrl = process.argv.slice(2).find((arg) => arg.startsWith('http')) || null;
+
 const pages = context.pages();
 const mainPage = pages.length > 0 ? pages[0] : await context.newPage();
 
@@ -321,14 +340,18 @@ console.log('🌐 Đang mở Messenger, Facebook và Extension Popup...');
 await mainPage.goto('https://www.messenger.com/');
 
 const fbPage = await context.newPage();
-await fbPage.goto('https://web.facebook.com/');
+await fbPage.goto(targetUrl || 'https://web.facebook.com/');
 
 if (extensionId) {
   const popupPage = await context.newPage();
   await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
 }
 
-await mainPage.bringToFront();
+if (targetUrl) {
+  await fbPage.bringToFront();
+} else {
+  await mainPage.bringToFront();
+}
 
 console.log('\n===============================================================');
 console.log('🎮 BẢNG ĐIỀU KHIỂN THỬ NGHIỆM DÀNH CHO BẠN:');

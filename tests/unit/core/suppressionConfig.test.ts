@@ -71,6 +71,7 @@ describe('buildSuppressionConfig', () => {
         inboxWatermarkLabels: [],
         inboxWatermarkPaths: [],
         hideStoryViews: true,
+        hideLiveStreamViews: true,
         hideTyping: true,
         // Feed auto-refresh blocking is a browsing-surface feature: an inbox has no feed to
         // hold in place, and spoofing an always-visible tab there costs realtime resync.
@@ -141,6 +142,7 @@ describe('buildSuppressionConfig', () => {
         'instagram.hideReadReceipts': false,
         'instagram.hideTyping': false,
         'instagram.hideStoryViews': false,
+        'instagram.hideLiveStreamViews': false,
         'instagram.bypassLinkShim': false,
         'instagram.hideSuggestedPosts': false,
         'instagram.hideReels': false,
@@ -206,6 +208,21 @@ describe('buildSuppressionConfig', () => {
     expect(buildSuppressionConfig('https://www.facebook.com/', withStory).hideStoryViews).toBe(true);
     expect(
       buildSuppressionConfig('https://www.instagram.com/', withStory).hideStoryViews,
+    ).toBeUndefined();
+  });
+
+  it('grants live stream suppression on facebook and instagram when enabled', () => {
+    const withLive: Settings = {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.hideLiveStreamViews': true,
+        'instagram.hideLiveStreamViews': false,
+      },
+    };
+    expect(buildSuppressionConfig('https://www.facebook.com/', withLive).hideLiveStreamViews).toBe(true);
+    expect(
+      buildSuppressionConfig('https://www.instagram.com/', withLive).hideLiveStreamViews,
     ).toBeUndefined();
   });
 

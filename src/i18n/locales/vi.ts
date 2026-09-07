@@ -67,6 +67,10 @@ export const vi: TranslationDictionary = {
       label: 'Xem tin ẩn danh (Story)',
       description: 'Xem story mà không xuất hiện trong danh sách người xem',
     },
+    'facebook.hideLiveStreamViews': {
+      label: 'Xem trực tiếp ẩn danh (Livestream)',
+      description: 'Xem video trực tiếp Facebook mà không xuất hiện trong danh sách người xem',
+    },
     'facebook.blockFeedAutoRefresh': {
       label: 'Chặn tự động tải lại bảng tin',
       description: 'Giữ nguyên vị trí đang lướt khi bạn chuyển tab quay lại',
@@ -118,6 +122,10 @@ export const vi: TranslationDictionary = {
     'instagram.hideStoryViews': {
       label: 'Xem tin ẩn danh (Story)',
       description: 'Xem story mà không xuất hiện trong danh sách người xem',
+    },
+    'instagram.hideLiveStreamViews': {
+      label: 'Xem trực tiếp ẩn danh (Livestream)',
+      description: 'Xem livestream Instagram mà không gửi thông báo tham gia cho chủ phòng',
     },
     'instagram.bypassLinkShim': {
       label: 'Bỏ qua chuyển hướng theo dõi (Link Shim)',

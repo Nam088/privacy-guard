@@ -22,6 +22,7 @@ export interface SuppressionConfig {
   readonly inboxWatermarkPaths: readonly string[];
   readonly hideReadReceipts?: boolean;
   readonly hideStoryViews?: boolean;
+  readonly hideLiveStreamViews?: boolean;
   readonly hideTyping?: boolean;
   readonly blockFeedAutoRefresh?: boolean;
   readonly hideSponsoredPosts?: boolean;
@@ -60,6 +61,7 @@ export function buildSuppressionConfig(
   const isReadOn = isFeatureOn(settings, featureKey(site.id, 'hideReadReceipts'));
   const isTypingOn = isFeatureOn(settings, featureKey(site.id, 'hideTyping'));
   const isStoryOn = isFeatureOn(settings, featureKey(site.id, 'hideStoryViews'));
+  const isLiveStreamOn = isFeatureOn(settings, featureKey(site.id, 'hideLiveStreamViews'));
   const isFeedReloadOn = isFeatureOn(settings, featureKey(site.id, 'blockFeedAutoRefresh'));
   const isSponsoredPostsOn = isFeatureOn(settings, featureKey(site.id, 'hideSponsoredPosts'));
   const isSuggestedPostsOn = isFeatureOn(settings, featureKey(site.id, 'hideSuggestedPosts'));
@@ -115,6 +117,7 @@ export function buildSuppressionConfig(
     inboxWatermarkPaths: readonly string[];
     hideReadReceipts?: boolean;
     hideStoryViews?: boolean;
+    hideLiveStreamViews?: boolean;
     hideTyping?: boolean;
     blockFeedAutoRefresh?: boolean;
     hideSponsoredPosts?: boolean;
@@ -139,6 +142,9 @@ export function buildSuppressionConfig(
   }
   if (isStoryOn) {
     result.hideStoryViews = true;
+  }
+  if (isLiveStreamOn) {
+    result.hideLiveStreamViews = true;
   }
   if (isTypingOn) {
     result.hideTyping = true;

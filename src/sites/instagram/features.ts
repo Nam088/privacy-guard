@@ -26,6 +26,14 @@ export const INSTAGRAM_FEATURES: readonly Feature[] = [
     category: 'privacy',
   },
   {
+    id: 'hideLiveStreamViews',
+    label: 'Hide live stream views',
+    description: 'Watch Instagram Live videos anonymously without joining notifications',
+    defaultEnabled: true,
+    status: 'active',
+    category: 'privacy',
+  },
+  {
     id: 'bypassLinkShim',
     label: 'Bypass Link Shim tracking',
     description: 'Open external links directly without routing through Instagram tracking redirect',

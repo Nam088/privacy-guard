@@ -6,12 +6,14 @@ import type { SendDecision, SendVerdict } from '@/observe/websocket';
 import { LazyInterceptContext, RuleEngine } from '@/engine';
 import {
   FacebookInboxWatermarkRule,
+  FacebookLiveStreamViewsRule,
   FacebookReadReceiptRule,
   FacebookStoryViewsRule,
   FacebookTypingRule,
   FacebookVoiceMemoRule,
 } from '@/sites/facebook/rules';
 import {
+  InstagramLiveStreamViewsRule,
   InstagramReadReceiptRule,
   InstagramStoryViewsRule,
   InstagramTypingRule,
@@ -48,6 +50,8 @@ export interface ObserverConfig {
   readonly inboxWatermarkPaths?: readonly string[];
   /** Whether facebook story views should be suppressed. */
   readonly hideStoryViews?: boolean;
+  /** Whether live stream viewer presence should be suppressed. */
+  readonly hideLiveStreamViews?: boolean;
   /** Whether typing indicators should be suppressed. */
   readonly hideTyping?: boolean;
   /** Whether feed auto-refresh should be blocked. */
@@ -76,15 +80,18 @@ export default defineUnlistedScript(() => {
 
   const engine = new RuleEngine();
   const storyRule = new FacebookStoryViewsRule();
+  const liveStreamRule = new FacebookLiveStreamViewsRule();
   const voiceMemoRule = new FacebookVoiceMemoRule();
   const typingHttpRule = new FacebookTypingRule();
   const readReceiptHttpRule = new FacebookReadReceiptRule();
 
   const igStoryRule = new InstagramStoryViewsRule();
+  const igLiveStreamRule = new InstagramLiveStreamViewsRule();
   const igTypingRule = new InstagramTypingRule();
   const igReadReceiptRule = new InstagramReadReceiptRule();
 
   let storyViewsActive = false;
+  let liveStreamViewsActive = false;
   let typingActive = false;
   let feedAutoRefreshActive = false;
   let sponsoredPostsActive = false;
@@ -136,6 +143,7 @@ export default defineUnlistedScript(() => {
       }
       capturing = Boolean(detail.capture);
       storyViewsActive = Boolean(detail.hideStoryViews);
+      liveStreamViewsActive = Boolean(detail.hideLiveStreamViews);
       typingActive = Boolean(detail.hideTyping);
       feedAutoRefreshActive = Boolean(detail.blockFeedAutoRefresh);
       sponsoredPostsActive = Boolean(detail.hideSponsoredPosts);
@@ -218,6 +226,12 @@ export default defineUnlistedScript(() => {
           return 'drop';
         }
       }
+      if (liveStreamViewsActive) {
+        const liveVerdict = igLiveStreamRule.evaluateHttp(url, body);
+        if (liveVerdict && liveVerdict.action === 'drop') {
+          return 'drop';
+        }
+      }
       if (typingActive) {
         const typingVerdict = igTypingRule.evaluateHttp(url, body);
         if (typingVerdict && typingVerdict.action === 'drop') {
@@ -236,6 +250,12 @@ export default defineUnlistedScript(() => {
     if (storyViewsActive) {
       const storyVerdict = storyRule.evaluateHttp(url, body);
       if (storyVerdict && storyVerdict.action === 'drop') {
+        return 'drop';
+      }
+    }
+    if (liveStreamViewsActive) {
+      const liveVerdict = liveStreamRule.evaluateHttp(url, body);
+      if (liveVerdict && liveVerdict.action === 'drop') {
         return 'drop';
       }
     }

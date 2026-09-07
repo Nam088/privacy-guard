@@ -61,6 +61,14 @@ export const FACEBOOK_FEATURES: readonly Feature[] = [
     category: 'privacy',
   },
   {
+    id: 'hideLiveStreamViews',
+    label: 'Hide live stream views',
+    description: 'Watch Facebook Live videos anonymously without appearing in the viewer list',
+    defaultEnabled: true,
+    status: 'active',
+    category: 'privacy',
+  },
+  {
     id: 'hideInboxLastSeen',
     label: 'Hide when you opened your inbox',
     description: 'Stop Messenger recording the time you last looked at your chat list',

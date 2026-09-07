@@ -67,6 +67,10 @@ export const en: TranslationDictionary = {
       label: 'Hide story views',
       description: 'Watch stories without appearing in the viewer list',
     },
+    'facebook.hideLiveStreamViews': {
+      label: 'Hide live stream views',
+      description: 'Watch Facebook Live videos anonymously without appearing in the viewer list',
+    },
     'facebook.blockFeedAutoRefresh': {
       label: 'Stop the feed reloading',
       description: 'Keep your place when you switch back to the tab',
@@ -118,6 +122,10 @@ export const en: TranslationDictionary = {
     'instagram.hideStoryViews': {
       label: 'Hide story views',
       description: 'Watch stories without appearing in the viewer list',
+    },
+    'instagram.hideLiveStreamViews': {
+      label: 'Hide live stream views',
+      description: 'Watch Instagram Live videos anonymously without sending join notifications',
     },
     'instagram.bypassLinkShim': {
       label: 'Bypass Link Shim tracking',
