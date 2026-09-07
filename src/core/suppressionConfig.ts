@@ -32,7 +32,6 @@ export interface SuppressionConfig {
   readonly hideVoicePlayed?: boolean;
   readonly scrambleDwellTime?: boolean;
   readonly bypassLinkShim?: boolean;
-  readonly mediaDownloader?: boolean;
 }
 
 const NOTHING: SuppressionConfig = {
@@ -126,7 +125,6 @@ export function buildSuppressionConfig(
     hideVoicePlayed?: boolean;
     scrambleDwellTime?: boolean;
     bypassLinkShim?: boolean;
-    mediaDownloader?: boolean;
   } = {
     readReceiptLabels,
     readReceiptPaths,
@@ -173,10 +171,6 @@ export function buildSuppressionConfig(
   }
   if (isLinkShimBypassedOn) {
     result.bypassLinkShim = true;
-  }
-  const isMediaDownloaderOn = isFeatureOn(settings, featureKey(site.id, 'mediaDownloader'));
-  if (isMediaDownloaderOn) {
-    result.mediaDownloader = true;
   }
 
   return result;

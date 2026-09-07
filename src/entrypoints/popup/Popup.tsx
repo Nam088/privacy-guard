@@ -21,7 +21,6 @@ import {
   BrandLogo,
   ChatDotsIcon,
   ClockStopIcon,
-  DownloadIcon,
   EyeOffIcon,
   FacebookIcon,
   FilmSlashIcon,
@@ -81,9 +80,6 @@ function getFeatureIcon(key: string) {
       return <RadarIcon size={15} class="text-rose-500" />;
     case 'global.stripFbclid':
       return <LinkSlashIcon size={15} class="text-amber-500" />;
-    case 'facebook.mediaDownloader':
-    case 'instagram.mediaDownloader':
-      return <DownloadIcon size={15} class="text-sky-500" />;
     default:
       return null;
   }

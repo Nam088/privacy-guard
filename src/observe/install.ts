@@ -9,7 +9,6 @@ import { installFeedDeclutterHook } from './feedDeclutter';
 import { installWebRtcShield } from './webrtc';
 import { installTelemetryScrambler } from './telemetry';
 import { installReadReplayBridge } from './replayBuffer';
-import { installMediaDownloader, parseAndRecordMediaFromText } from './mediaDownloader';
 
 type ObservableScope = Parameters<typeof observeWebSocket>[0] &
   Parameters<typeof observeWorkers>[0] &
@@ -35,7 +34,6 @@ export interface ObserverOptions {
   readonly isReelsActive?: () => boolean;
   readonly isWebRtcProtected?: () => boolean;
   readonly isDwellTimeScrambled?: () => boolean;
-  readonly isMediaDownloaderActive?: () => boolean;
 }
 
 export function installObservers(
@@ -59,19 +57,8 @@ export function installObservers(
     options.interceptWorker,
   );
 
-  const onNetworkResponse = (url: string, text: string) => {
-    if (
-      options.isMediaDownloaderActive?.() &&
-      (url.includes('graphql') || url.includes('/video/') || url.includes('/api/v1/'))
-    ) {
-      parseAndRecordMediaFromText(text);
-    }
-  };
-
-
-  const undoFetch = observeFetch(scope, report, frameUrl, options.interceptFetch, onNetworkResponse);
-  const undoXhr = observeXhr(scope, report, frameUrl, options.interceptXhr, onNetworkResponse);
-
+  const undoFetch = observeFetch(scope, report, frameUrl, options.interceptFetch);
+  const undoXhr = observeXhr(scope, report, frameUrl, options.interceptXhr);
 
   let undoMaw = () => {};
   if (options.isTypingSuppressed) {
@@ -120,15 +107,7 @@ export function installObservers(
     undoReplay = installReadReplayBridge(candidateWin);
   }
 
-  let undoDownloader = () => {};
-  if (options.isMediaDownloaderActive) {
-    if (candidateWin && typeof candidateWin.document !== 'undefined') {
-      undoDownloader = installMediaDownloader(candidateWin, options.isMediaDownloaderActive);
-    }
-  }
-
   return () => {
-    undoDownloader();
     undoReplay();
     undoTelemetry();
     undoWebRtc();

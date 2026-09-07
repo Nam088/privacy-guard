@@ -139,14 +139,6 @@ export const en: TranslationDictionary = {
       label: 'Hide sponsored posts & ads',
       description: 'Hide ads and sponsored content in your Instagram feed',
     },
-    'facebook.mediaDownloader': {
-      label: 'Quick media downloader',
-      description: 'Show a subtle download button on hover to save videos and stories in HD',
-    },
-    'instagram.mediaDownloader': {
-      label: 'Quick media downloader',
-      description: 'Show a subtle download button on hover to save Reels, videos, and stories in HD',
-    },
     'instagram.protectWebRtcIp': {
       label: 'WebRTC IP leak shield',
       description: 'Prevent local and public IP exposure during Instagram Direct calls',

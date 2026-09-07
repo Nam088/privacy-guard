@@ -73,12 +73,4 @@ export const INSTAGRAM_FEATURES: readonly Feature[] = [
     status: 'active',
     category: 'privacy',
   },
-  {
-    id: 'mediaDownloader',
-    label: 'Quick media downloader',
-    description: 'Show a subtle download button on hover to save Reels, videos, and stories in HD',
-    defaultEnabled: false,
-    status: 'active',
-    category: 'feed',
-  },
 ];

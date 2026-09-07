@@ -68,8 +68,6 @@ export interface ObserverConfig {
   readonly scrambleDwellTime?: boolean;
   /** Whether Meta Link Shim redirect tracking should be bypassed. */
   readonly bypassLinkShim?: boolean;
-  /** Whether media quick downloader should be enabled. */
-  readonly mediaDownloader?: boolean;
 }
 
 export default defineUnlistedScript(() => {
@@ -98,7 +96,6 @@ export default defineUnlistedScript(() => {
   let dwellTimeScrambled = false;
   let readReceiptsActive = false;
   let linkShimBypassed = false;
-  let mediaDownloaderActive = false;
 
   let isFacebookSite = false;
   let isInstagramSite = false;
@@ -149,7 +146,6 @@ export default defineUnlistedScript(() => {
       voicePlayedActive = Boolean(detail.hideVoicePlayed);
       dwellTimeScrambled = Boolean(detail.scrambleDwellTime);
       linkShimBypassed = Boolean(detail.bypassLinkShim);
-      mediaDownloaderActive = Boolean(detail.mediaDownloader);
 
       const readReceiptLabels = detail.readReceiptLabels ?? [];
       const typingLabels = detail.typingLabels ?? [];
@@ -341,7 +337,6 @@ export default defineUnlistedScript(() => {
       isReelsActive,
       isWebRtcProtected: () => webRtcProtected,
       isDwellTimeScrambled: () => dwellTimeScrambled,
-      isMediaDownloaderActive: () => mediaDownloaderActive,
     },
   );
 });
