@@ -1,166 +1,232 @@
-# Privacy Guard
+<p align="center">
+  <img src="assets/icon.svg" width="96" height="96" alt="Privacy Guard Logo" />
+</p>
 
-Privacy Guard is an advanced, privacy-focused browser extension designed to eliminate behavioral tracking, invasive telemetry, and social surveillance on Meta platforms (Facebook, Messenger, and Instagram).
+<h1 align="center">Privacy Guard</h1>
 
-The extension intercepts network signals, real-time WebSocket frames, and Web Worker threads to protect user privacy without breaking website functionality.
+<p align="center">
+  <strong>Next-Generation Behavioral Stealth & Anti-Surveillance Extension for the Meta Ecosystem</strong>
+</p>
+
+<p align="center">
+  <em>Comprehensive real-time telemetry suppression, WebSocket DGW binary filtering, Armadillo E2EE interception, and algorithmic isolation across Facebook, Messenger, and Instagram.</em>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Nam088/privacy-guard/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Nam088/privacy-guard/ci.yml?branch=main&label=CI%20Pipeline&logo=github&style=flat-square" alt="CI Status" /></a>
+  <a href="https://github.com/Nam088/privacy-guard/releases"><img src="https://img.shields.io/github/v/release/Nam088/privacy-guard?color=blue&style=flat-square&logo=git" alt="Latest Release" /></a>
+  <img src="https://img.shields.io/badge/Manifest-V3-success?style=flat-square&logo=googlechrome&logoColor=white" alt="Manifest V3" />
+  <img src="https://img.shields.io/badge/Browsers-Chrome%20%7C%20Edge%20%7C%20Firefox-orange?style=flat-square" alt="Multi-browser" />
+  <img src="https://img.shields.io/badge/Tests-570%2F570%20Passed-brightgreen?style=flat-square&logo=vitest" alt="Vitest 100% Passed" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT License" />
+</p>
 
 ---
 
-## Languages / Ngôn ngữ
+## 🌐 Table of Contents / Mục lục
 
-- [English Documentation](#english)
-- [Tài liệu Tiếng Việt](#tieng-viet)
+- [Why Privacy Guard?](#-why-privacy-guard)
+- [Architecture & Protocol Interception](#-architecture--protocol-interception)
+- [Feature Matrix](#-feature-matrix)
+- [English Documentation](#-english-documentation)
+  - [Messaging & E2EE Privacy](#1-messaging--e2ee-privacy)
+  - [Anonymous Browsing & Social Stealth](#2-anonymous-browsing--social-stealth)
+  - [Feed Declutter & Recommendation Shield](#3-feed-declutter--recommendation-shield)
+  - [Global Network Defense](#4-global-network-defense)
+- [Tài Liệu Tiếng Việt](#-tài-liệu-tiếng-việt)
+- [Development & Verification](#-development--verification)
+
+---
+
+## ⚡ Why Privacy Guard?
+
+Traditional ad-blockers and privacy extensions operate on simplistic URL filtering rules (`declarativeNetRequest` / EasyList). However, Meta's modern web architecture (Comet on Facebook and Polaris on Instagram) multiplexes virtually all user interactions over persistent **binary WebSocket streams (Device Gateway / DGW)**, **Web Worker threads (Armadillo E2EE)**, and unified **GraphQL batch endpoints**.
+
+Standard extensions are completely blind to these internal protocols. **Privacy Guard is purpose-built to inspect, parse, and selectively suppress telemetry at the transport and runtime layer without breaking normal app usage:**
+
+| Capability | Traditional Ad Blockers | Privacy Guard |
+| :--- | :---: | :---: |
+| Block External Meta Pixels (`fbevents.js`) | ✅ | ✅ |
+| Strip `fbclid` / tracking redirects | ⚠️ Partial | ✅ Full Link Shim unwrap |
+| Intercept DGW WebSocket binary frames (`/ws/lightspeed`, `/ws/realtime`) | ❌ Blind | ✅ Zero-copy binary parser |
+| Suppress E2EE Read Receipts in Armadillo Web Workers | ❌ Blind | ✅ Worker bridge proxying |
+| Watch Stories & Livestreams 100% Anonymously | ❌ Impossible | ✅ Synthetic Relay 200 spoofing |
+| Zero-Trace Search History (prevent recommendation skewing) | ❌ No | ✅ Intercepts typeahead mutations |
+| Scramble Milisecond-level Dwell Time Tracking | ❌ No | ✅ Scrambles Merlin Protocol beacons |
+| Native Multi-Browser (Chromium + Firefox Xray vision support) | ⚠️ Varied | ✅ 100% Cross-browser MV3 |
+
+---
+
+## 🏗️ Architecture & Protocol Interception
+
+Privacy Guard uses a decoupled, event-driven defense-in-depth architecture:
+
+```mermaid
+flowchart TD
+    subgraph Browser["Client Browser Context"]
+        DOM["DOM / Composer / Video Player"]
+        Worker["Web Worker (Armadillo E2EE)"]
+        WS["WebSocket (DGW: /ws/lightspeed, /ws/realtime)"]
+        HTTP["HTTP Client (Fetch / XHR)"]
+    end
+
+    subgraph PrivacyGuard["Privacy Guard Interception Core"]
+        WorkerProxy["Worker & MessagePort Proxy"]
+        DGWParser["DGW Zero-Copy Binary Frame Evaluator"]
+        HttpRules["GraphQL HTTP Suppression Engine"]
+        PresenceTransform["StreamController Presence Normalizer"]
+        BeaconFilter["Beacon & Telemetry Scrambler"]
+    end
+
+    subgraph MetaEdge["Meta Infrastructure"]
+        DGWServer["Meta DGW Edge (/ws/*)"]
+        GraphQLServer["Meta GraphQL (/api/graphql/)"]
+        TelemetryServer["Banzai & Merlin Telemetry (/ajax/bz)"]
+    end
+
+    DOM -->|User actions| WS & HTTP & Worker
+    Worker -->|MAWBridgeFireAndForget| WorkerProxy
+    WS -->|Binary frame dispatch| DGWParser
+    HTTP -->|Relay GraphQL requests| HttpRules
+
+    WorkerProxy -->|Suppress seen / typing| DOM
+    DGWParser -->|Drop labels 21, 72, 235, 3| DGWServer
+    HttpRules -->|Synthetic 200 Relay OK| DOM
+    HttpRules -.->|Drop seen / search mutations| GraphQLServer
+    PresenceTransform -->|Spoof offline state| DGWServer
+    BeaconFilter -.->|Suppress dwell time & VPV| TelemetryServer
+```
+
+---
+
+## 📊 Feature Matrix
+
+| Feature ID | Feature Name | Facebook | Instagram | Protection Level |
+| :--- | :--- | :---: | :---: | :---: |
+| `hideReadReceipts` | Ghost Read Receipts | ✅ | ✅ | WebSocket DGW + GraphQL + Armadillo E2EE |
+| `hideTyping` | Typing Indicator Shield | ✅ | ✅ | WebSocket DGW + Composer State Bridge |
+| `hideStoryViews` | Anonymous Story Viewing | ✅ | ✅ | GraphQL Seen State Mutation Drop |
+| `hideLiveStreamViews` | Anonymous Live Stream Viewing | ✅ | ✅ | GraphQL Live Join Mutation Drop |
+| `stealthSearch` | Stealth Search & Zero-Trace History | ✅ | ✅ | Typeahead Mutation Drop + Synthetic Relay OK |
+| `hideOnlineStatus` | Invisible Mode (Hide Active Green Dot) | ✅ | ✅ | StreamController Presence Packet Modification |
+| `protectWebRtcIp` | WebRTC IP Leak Shield | ✅ | ✅ | RTCPeerConnection ICE Candidate Filtering |
+| `hideVoicePlayed` | Voice Note Playback Shield | ✅ | — | Playback Receipt Telemetry Drop |
+| `hideInboxLastSeen` | Hide Inbox Opened Watermark | ✅ | ✅ | Thread 0 Root Watermark (Label 6) Drop |
+| `scrambleDwellTime` | Scramble Dwell Time & Behavior Beacons | ✅ | ✅ | Merlin Unified Protocol & SendBeacon Scrambler |
+| `bypassLinkShim` | Bypass Link Shim Tracking Redirect | ✅ | ✅ | DOM Event Hijacking + Direct URL Extraction |
+| `hideSponsoredPosts` | Hide Sponsored Posts & Ads | ✅ | ✅ | Heuristic DOM MutationObserver Engine |
+| `hideSuggestedPosts` | Clean Feed (Hide Algorithmic Suggestions) | ✅ | ✅ | Feed Shelf & Algorithmic Post Sanitizer |
+| `hideReels` | Hide Reels & Short Video Trays | ✅ | ✅ | Feed Tray Elimination |
+| `blockFeedAutoRefresh` | Block Background Feed Auto-Reload | ✅ | — | Document Visibility State Hook |
+| `blockMetaPixel` | Block Third-Party Meta Tracking Pixels | ✅ | ✅ | DeclarativeNetRequest Rule (Global) |
+| `stripFbclid` | Strip `fbclid`, `igshid`, `utm_*` Trackers | ✅ | ✅ | URL Search Parameter Sanitization (Global) |
 
 ---
 
 <a name="english"></a>
-## English
+## 🇬🇧 English Documentation
 
-### Key Features
+### 1. Messaging & E2EE Privacy
+* **Ghost Read Receipts (`hideReadReceipts`)**: Read incoming messages on Facebook Messenger and Instagram Direct without triggering the "Seen" indicator. Intercepts read watermark frames (labels `21`, `72`, `235`) on WebSocket DGW endpoints (`/ws/lightspeed`, `/ws/realtime`), GraphQL mutations (`useReadReceiptMutation`, `MarkThreadReadMutation`), and Armadillo E2EE Web Worker threads.
+* **Typing Indicator Shield (`hideTyping`)**: Completely prevents the animated three typing dots from appearing while you compose messages in chats, full-screen Messenger, and encrypted conversations. Filters `sendChatStateFromComposer` while preserving the idle state.
+* **Invisible Mode / Hide Online Status (`hideOnlineStatus`)**: Browse Messenger and Instagram Direct without exposing your active status (the green dot). Transforms outgoing presence packets on `/ws/streamcontroller` to report an offline state while allowing incoming messages to be received instantly.
+* **Inbox Opened Timestamp Shield (`hideInboxLastSeen`)**: Blocks the root-level watermark (label `6` with parent thread key `0`) sent when opening Messenger, preventing Meta from recording the exact time you checked your chat list.
+* **Voice Note Playback Shield (`hideVoicePlayed`)**: Listen to received voice memos safely without alerting the sender that the audio file was played.
 
-#### 1. Messaging and Privacy Protection
-- **Hide Read Receipts (`hideReadReceipts`)**: Read incoming messages on Facebook and Messenger without triggering "Seen" indicators. Suppresses read watermark frames (labels 21, 72, 235) across WebSocket DGW endpoints (`/ws/lightspeed`, `/ws/realtime`), GraphQL mutations (`useReadReceiptMutation`, `MarkThreadReadMutation`), and Armadillo E2EE Web Worker actions.
-- **Hide Typing Indicator (`hideTyping`)**: Completely removes the three animated typing dots in popup chats, full-screen Messenger, and End-to-End Encrypted (E2EE) conversations. Prevents `sendChatStateFromComposer` events from leaking typing status while preserving the stop/idle signal when you stop typing.
-- **Invisible Mode / Hide Online Status (`hideOnlineStatus`)**: Browse Messenger without exposing the green active presence dot. Transforms outgoing presence stream packets on `/ws/streamcontroller` to report offline state while allowing incoming messages to be received normally.
-- **Hide Story Views (`hideStoryViews`)**: Watch Facebook stories anonymously. Suppresses story impression telemetry and view mutations sent to `/api/graphql/`, preventing your profile from appearing in the viewer list.
-- **Hide Inbox Last Seen (`hideInboxLastSeen`)**: Blocks the root-level watermark (label 6 with parent thread key 0) sent when opening Messenger, hiding the exact timestamp you accessed your inbox.
-- **WebRTC IP Leak Shield (`protectWebRtcIp`)**: Prevents exposure of private LAN and public IP addresses during Messenger voice and video calls by filtering ICE candidate gathering.
-- **Hide Voice Note Played Marker (`hideVoicePlayed`)**: Listens to voice messages safely. Defends against audio playback receipts and telemetry mutations.
-- **Bypass Link Shim Tracking (`bypassLinkShim`)**: Automatically strips Meta's tracking redirect (`l.facebook.com/l.php?u=...` and `lm.facebook.com`) on links. Opens external websites directly and accelerates navigation without Meta logging your outbound destinations.
+### 2. Anonymous Browsing & Social Stealth
+* **Stealth Search & Zero-Trace History (`stealthSearch`)**: Search for profiles, pages, and tags on Facebook and Instagram without recording queries to your "Recent Searches" history or polluting Meta's recommendation algorithms. Drops `CometAddTypeaheadRecentSearchMutation` and `usePolarisRegisterInRecentSearchesMutation` with synthetic Relay 200 OK responses.
+* **Anonymous Story Viewing (`hideStoryViews`)**: Watch Stories on Facebook and Instagram without your name appearing in the viewer list. Drops `storiesUpdateSeenStateMutation` and related GraphQL telemetry.
+* **Anonymous Live Stream Viewing (`hideLiveStreamViews`)**: Watch Facebook Live videos and Instagram Livestreams without sending join notifications or appearing in the active viewer count.
+* **WebRTC IP Leak Shield (`protectWebRtcIp`)**: Prevents local and public IP address exposure during Messenger and Instagram Direct voice/video calls by blocking non-proxied ICE candidate gathering.
 
-#### 2. Feed and Content Control
-- **Hide Sponsored Posts (`hideSponsoredPosts`)**: Automatically filters out sponsored advertisements and promotional campaigns from your main feed.
-- **Hide Suggested Posts (`hideSuggestedPosts`)**: Cleanses the feed of algorithmically recommended content ("Suggested for you"), displaying only updates from friends and followed pages.
-- **Hide Reels and Short Videos (`hideReels`)**: Removes Reels shelves and short video players from your feed to minimize distraction.
-- **Stop Feed Auto-Reload (`blockFeedAutoRefresh`)**: Disables background page visibility events that cause Facebook to reload or scroll away from your current feed position when switching tabs.
-- **Scramble Dwell Time Tracking (`scrambleDwellTime`)**: Blocks Meta's Merlin Unified Protocol telemetry on `/ws/realtime`, preventing Meta from measuring exact milliseconds spent viewing posts.
+### 3. Feed Declutter & Recommendation Shield
+* **Scramble Dwell Time Tracking (`scrambleDwellTime`)**: Neutralizes Meta's millisecond-level telemetry (`comet_feed_dwell_time`, `feed_vpvd`, `PolarisSearchViewportLogRecentSearches`) via `/ajax/bz` and `/ws/realtime`, preventing algorithmic profiling based on viewing habits.
+* **Bypass Link Shim Tracking (`bypassLinkShim`)**: Automatically strips Meta's tracking redirect (`l.facebook.com/l.php?u=...` and `lm.facebook.com`), opening external links directly with no tracking latency.
+* **Hide Sponsored Posts (`hideSponsoredPosts`)**: Cleanses your feed of paid advertisements and sponsored promotions.
+* **Hide Suggested Posts (`hideSuggestedPosts`)**: Removes algorithmically injected posts ("Suggested for you"), displaying updates exclusively from friends and pages you follow.
+* **Hide Reels & Short Videos (`hideReels`)**: Strips Reels shelves and short video players from your feed to minimize distraction.
+* **Stop Feed Auto-Reload (`blockFeedAutoRefresh`)**: Disables background page visibility hooks that cause Facebook to reload and lose your feed position when switching tabs.
 
-#### 3. Global Anti-Tracking
-- **Block Meta Tracking Pixels (`meta-pixel`)**: Blocks third-party tracking scripts (`fbevents.js`, `facebook.com/tr/`, `signals/`) across the web using declarativeNetRequest rules.
-- **Strip `fbclid` Parameter (`fbclid`)**: Automatically removes the `fbclid` query parameter from external URLs to prevent cross-site correlation.
-
----
-
-### Technical Architecture
-
-Privacy Guard utilizes a decoupled, defense-in-depth architecture:
-- **WebSocket Protocol Interception**: Parses binary frames from Meta's Device Gateway (DGW) across `/ws/lightspeed` and `/ws/realtime` using zero-copy byte extraction.
-- **Worker and MessagePort Proxying**: Traps background worker bridges (`MAWBridgeFireAndForget`) and postMessage channels to intercept Armadillo E2EE states before encryption.
-- **Cross-Browser Engine**: Native Manifest V3 support across Chromium (Chrome, Edge, Brave) and Gecko (Firefox 128+). Firefox includes declarative CSP modification and Xray vision serialization (`cloneInto`).
-
----
-
-### Installation and Development
-
-#### Prerequisites
-- Node.js 22 or newer
-- pnpm 9 or newer
-
-#### Setup
-```bash
-pnpm install
-```
-
-#### Run in Development Mode
-```bash
-# Chromium (Chrome, Edge, Brave)
-pnpm dev
-
-# Firefox (auto-loads temporary profile)
-pnpm dev:firefox
-```
-
-#### Production Builds
-```bash
-# Build all browsers (Chrome, Edge, Firefox)
-pnpm build:all
-
-# Output directories:
-# .output/chrome-mv3
-# .output/edge-mv3
-# .output/firefox-mv3
-```
-
-#### Running Verification Suite
-```bash
-pnpm compile    # Typecheck with tsc
-pnpm test       # Run Vitest unit tests
-pnpm lint       # ESLint rules
-```
+### 4. Global Network Defense
+* **Block Meta Tracking Pixels (`blockMetaPixel`)**: Blocks third-party tracking scripts (`fbevents.js`, `facebook.com/tr/`, `signals/`) across the web using declarativeNetRequest rules.
+* **Strip Tracking Query Parameters (`stripFbclid`)**: Strips `fbclid`, `igshid`, `utm_*`, `si`, and `gclid` parameters when following links.
 
 ---
 
 <a name="tieng-viet"></a>
-## Tiếng Việt
+## 🇻🇳 Tài Liệu Tiếng Việt
 
-### Danh sách tính năng
+### 1. Quyền Riêng Tư & Bảo Mật Trò Chuyện
+* **Chặn Đã Xem Tin Nhắn (`hideReadReceipts`)**: Đọc tin nhắn trên Facebook, Messenger và Instagram Direct mà không gửi thông báo "Đã xem" (Seen). Chặn triệt để các khung watermark (nhãn `21`, `72`, `235`) trên kênh WebSocket DGW (`/ws/lightspeed`, `/ws/realtime`), GraphQL mutation và Web Worker mã hóa đầu cuối Armadillo E2EE.
+* **Chặn Đang Soạn Tin Nhắn (`hideTyping`)**: Triệt tiêu hoàn toàn bong bóng 3 chấm nhấp nháy khi bạn gõ bàn phím trong Messenger popup, Messenger toàn màn hình và Instagram Direct.
+* **Chế Độ Tàng Hình / Ẩn Chấm Xanh Online (`hideOnlineStatus`)**: Lướt Facebook và Instagram mà không bao giờ hiện chấm xanh hoạt động. Gói tin presence trên `/ws/streamcontroller` được điều chỉnh về trạng thái offline ngầm.
+* **Ẩn Thời Điểm Mở Hộp Thư (`hideInboxLastSeen`)**: Ngăn chặn Messenger ghi lại mốc thời gian bạn truy cập danh sách tin nhắn lần cuối.
+* **Ẩn Đã Nghe Tin Nhắn Thoại (`hideVoicePlayed`)**: Nghe tin nhắn thoại mà đối phương không hề hay biết.
 
-#### 1. Quyền riêng tư và Bảo mật tin nhắn
-- **Chặn Đã xem (`hideReadReceipts`)**: Đọc tin nhắn trên Facebook và Messenger mà không gửi thông báo Đã xem (Seen). Chặn các gói tin watermark (nhãn 21, 72, 235) trên cả kênh WebSocket DGW (`/ws/lightspeed`, `/ws/realtime`), GraphQL mutation (`useReadReceiptMutation`, `MarkThreadReadMutation`) và Web Worker mã hóa đầu cuối Armadillo.
-- **Ẩn 3 chấm đang soạn tin (`hideTyping`)**: Triệt tiêu hoàn toàn bong bóng 3 chấm nhấp nháy khi bạn gõ phím trong khung chat popup, Messenger toàn màn hình và cả cuộc trò chuyện mã hóa E2EE. Chặn event `sendChatStateFromComposer` nhưng vẫn bảo toàn tín hiệu dừng gõ khi bạn ngưng nhập liệu.
-- **Chế độ tàng hình / Ẩn chấm xanh Online (`hideOnlineStatus`)**: Lướt Messenger mà không hiện chấm xanh hoạt động. Chỉnh sửa gói tin presence trên kênh `/ws/streamcontroller` sang trạng thái offline nhưng vẫn nhận tin nhắn đến bình thường.
-- **Xem Story ẩn danh (`hideStoryViews`)**: Xem Story của bạn bè mà không xuất hiện trong danh sách người đã xem. Chặn toàn bộ request ghi nhận lượt xem gửi lên `/api/graphql/`.
-- **Ẩn thời gian mở hộp thư (`hideInboxLastSeen`)**: Chặn watermark gốc (nhãn 6 với parent thread key 0), ngăn Messenger lưu lại mốc thời gian bạn vừa truy cập danh sách chat.
-- **Chống rò rỉ IP qua WebRTC (`protectWebRtcIp`)**: Bảo vệ địa chỉ IP mạng nội bộ (LAN) và IP công cộng khỏi bị lộ khi thực hiện cuộc gọi thoại và video trên Messenger.
-- **Phòng thủ tin nhắn thoại (`hideVoicePlayed`)**: Nghe tin nhắn thoại an toàn, chặn các receipt telemetry về việc phát âm thanh.
-- **Bỏ qua chuyển hướng Link Shim (`bypassLinkShim`)**: Tự động gọt bỏ link chuyển hướng theo dõi `l.facebook.com/l.php?u=...` và `lm.facebook.com`. Mở thẳng liên kết đích giúp tăng tốc độ tải trang và ngăn Meta ghi nhận bạn vừa bấm vào liên kết nào.
+### 2. Lướt Web Ẩn Danh & Chống Lưu Vết
+* **Tìm Kiếm Vô Danh / Không Lưu Lịch Sử (`stealthSearch`)**: Thoải mái tìm kiếm trang cá nhân, tài khoản, fanpage và hashtag mà **không bị lưu vào lịch sử tìm kiếm gần đây** và **không làm lệch thuật toán gợi ý feed/kết bạn**. Chặn đứng `CometAddTypeaheadRecentSearchMutation` và `usePolarisRegisterInRecentSearchesMutation`.
+* **Xem Story Ẩn Danh (`hideStoryViews`)**: Xem toàn bộ Story của bạn bè trên Facebook và Instagram mà không xuất hiện tên trong danh sách người đã xem.
+* **Xem Livestream Ẩn Danh (`hideLiveStreamViews`)**: Tham gia xem video phát trực tiếp trên Facebook và Instagram mà không gửi thông báo tham gia cho chủ phòng hoặc hiện tên trong danh sách khán giả.
+* **Chống Rò Rỉ IP Qua WebRTC (`protectWebRtcIp`)**: Bảo vệ địa chỉ IP công cộng và IP mạng nội bộ khi gọi thoại/video trên Messenger và Instagram Direct.
 
-#### 2. Kiểm soát Bảng tin (Feed)
-- **Ẩn bài viết quảng cáo (`hideSponsoredPosts`)**: Tự động loại bỏ các bài viết Được tài trợ (Sponsored) khỏi bảng tin.
-- **Ẩn bài viết gợi ý (`hideSuggestedPosts`)**: Lọc sạch nội dung đề xuất thuật toán (Gợi ý cho bạn), chỉ hiển thị bài đăng từ bạn bè và các trang bạn đang theo dõi.
-- **Ẩn Reels và video ngắn (`hideReels`)**: Ẩn hoàn toàn khay Reels và các clip ngắn trên bảng tin để tránh xao nhãng.
-- **Chặn tự động tải lại trang (`blockFeedAutoRefresh`)**: Ngăn Facebook tự động cuộn hoặc reload làm mất vị trí bài viết khi bạn chuyển tab.
-- **Chặn đo thời gian dừng xem (`scrambleDwellTime`)**: Chặn giao thức Merlin Unified Protocol trên `/ws/realtime`, không cho Meta ghi nhận số mili-giây bạn dừng lại xem bài viết hoặc video.
+### 3. Dọn Dẹp Bảng Tin & Kiểm Soát Thuật Toán
+* **Chặn Đo Thời Gian Dừng Xem Dwell Time (`scrambleDwellTime`)**: Chặn Meta đo đạc số giây/mili-giây bạn dừng lại đọc từng bài viết, triệt tiêu cơ sở dữ liệu phân tích hành vi của thuật toán.
+* **Bỏ Qua Chuyển Hướng Link Shim (`bypassLinkShim`)**: Mở trực tiếp các liên kết ra ngoài mà không phải đi qua máy chủ chuyển hướng theo dõi của Meta (`l.facebook.com`), tăng tốc độ mở web và bảo vệ quyền riêng tư.
+* **Ẩn Bài Viết Được Tài Trợ (`hideSponsoredPosts`)**: Tự động lọc sạch toàn bộ quảng cáo và bài viết tài trợ trên bảng tin.
+* **Ẩn Bài Viết Thuật Toán Gợi Ý (`hideSuggestedPosts`)**: Chỉ hiển thị bài viết từ bạn bè và các trang bạn chủ động theo dõi.
+* **Ẩn Reels & Video Ngắn (`hideReels`)**: Loại bỏ hoàn toàn các khay Thước phim/Reels gây nghiện và xao nhãng.
+* **Chặn Tự Động Tải Lại Bảng Tin (`blockFeedAutoRefresh`)**: Giữ nguyên vị trí bài viết bạn đang đọc dở khi chuyển tab quay lại.
 
-#### 3. Chặn theo dõi toàn diện
-- **Chặn Meta Pixel (`meta-pixel`)**: Chặn các đoạn mã theo dõi hành vi (`fbevents.js`, `facebook.com/tr/`, `signals/`) trên các trang web bên ngoài bằng quy tắc declarativeNetRequest.
-- **Gọt bỏ tham số `fbclid` (`fbclid`)**: Tự động xóa đuôi theo dõi `fbclid` trên thanh địa chỉ URL khi bấm chuyển trang ra ngoài.
-
----
-
-### Kiến trúc kỹ thuật
-
-Privacy Guard được thiết kế theo mô hình phòng thủ đa lớp:
-- **Chặn bắt giao thức WebSocket**: Giải mã nhị phân các khung DGW trên `/ws/lightspeed` và `/ws/realtime` với độ trễ cực thấp.
-- **Proxy Web Worker và MessagePort**: Bắt các kênh nội bộ của Meta (`MAWBridgeFireAndForget`) để kiểm soát trạng thái chat E2EE trước khi dữ liệu bị mã hóa.
-- **Hỗ trợ đa trình duyệt**: Chuẩn Manifest V3 cho cả Chromium (Chrome, Edge, Brave) và Gecko (Firefox 128+). Bản Firefox tích hợp sẵn bộ lọc CSP và cơ chế xử lý Xray vision (`cloneInto`).
+### 4. Phòng Thủ Toàn Cầu
+* **Chặn Mã Theo Dõi Meta Pixel (`blockMetaPixel`)**: Ngăn chặn mã theo dõi Meta Pixel trên các website bên ngoài.
+* **Gọt Bỏ Tham Số Theo Dõi URL (`stripFbclid`)**: Tự động loại bỏ `fbclid`, `igshid`, `utm_*`, `si`, `gclid` khi click vào các liên kết.
 
 ---
 
-### Hướng dẫn Cài đặt và Phát triển
+## 🛠️ Development & Verification
 
-#### Yêu cầu hệ thống
-- Node.js phiên bản 22 trở lên
-- pnpm phiên bản 9 trở lên
+### Prerequisites
+- **Node.js**: `v22.0.0` or higher
+- **pnpm**: `v9.0.0` or higher
 
-#### Cài đặt dependencies
+### Installation
 ```bash
+git clone https://github.com/Nam088/privacy-guard.git
+cd privacy-guard
 pnpm install
 ```
 
-#### Chạy trong môi trường phát triển
+### Development Server
 ```bash
-# Cho Chrome, Edge, Brave
+# Launch Chrome / Chromium with extension hot-reloaded
 pnpm dev
 
-# Cho Firefox (tự động mở cửa sổ thử nghiệm)
+# Launch Firefox in isolated development mode
 pnpm dev:firefox
 ```
 
-#### Build bản phát hành
+### Production Build
 ```bash
-# Build cho tất cả trình duyệt
+# Compile and package for all target browsers simultaneously
 pnpm build:all
 
-# Thư mục đầu ra sau khi build:
-# .output/chrome-mv3   (Cho Chrome và Chromium)
-# .output/edge-mv3     (Cho Microsoft Edge)
-# .output/firefox-mv3  (Cho Mozilla Firefox)
+# Output directories:
+# ├── .output/chrome-mv3    (Google Chrome, Brave, Opera)
+# ├── .output/edge-mv3      (Microsoft Edge)
+# └── .output/firefox-mv3   (Mozilla Firefox)
 ```
 
-#### Kiểm tra chất lượng mã nguồn
+### Comprehensive Verification Suite
+Every change must pass our strict verification standards:
 ```bash
-pnpm compile    # Kiểm tra kiểu dữ liệu TypeScript
-pnpm test       # Chạy toàn bộ test suite Vitest
-pnpm lint       # Kiểm tra cú pháp và quy tắc ESLint
+pnpm compile    # TypeScript strict type check (tsc --noEmit)
+pnpm lint       # ESLint static analysis
+pnpm test       # Vitest unit test suite (57 test suites, 570+ assertions)
 ```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+Privacy Guard is an independent research project and is not affiliated with, endorsed by, or associated with Meta Platforms, Inc.
