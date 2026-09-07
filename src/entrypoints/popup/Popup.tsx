@@ -36,6 +36,7 @@ import {
   SearchSlashIcon,
   ShieldNetworkIcon,
   SparklesSlashIcon,
+  VideoOffIcon,
 } from '@/ui/components/icons';
 
 const NEEDS_ALL_URLS = 'global.stripFbclid';
@@ -76,6 +77,9 @@ function getFeatureIcon(key: string) {
     case 'facebook.hideStoryViews':
     case 'instagram.hideStoryViews':
       return <GhostIcon size={15} class="text-pink-500" />;
+    case 'facebook.hideLiveStreamViews':
+    case 'instagram.hideLiveStreamViews':
+      return <VideoOffIcon size={15} class="text-rose-500" />;
     case 'facebook.hideInboxLastSeen':
       return <LockCheckIcon size={15} class="text-teal-500" />;
     case 'facebook.stealthSearch':
