@@ -14,11 +14,13 @@ describe('mediaDownloader', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     clearCapturedVideos();
+    window.history.replaceState({}, '', '/');
   });
 
   afterEach(() => {
     document.body.innerHTML = '';
     clearCapturedVideos();
+    window.history.replaceState({}, '', '/');
     vi.restoreAllMocks();
   });
 
@@ -496,6 +498,83 @@ describe('mediaDownloader', () => {
 
       const res = resolveMediaSource(container);
       expect(res).toBeNull();
+    });
+  });
+
+  describe('non-intrusive positioning & container hierarchy', () => {
+    it('attaches button to the immediate video wrapper instead of outer article', () => {
+      const article = document.createElement('article');
+      const postHeader = document.createElement('header');
+      postHeader.innerHTML = '<button aria-label="Tùy chọn khác">...</button>';
+      article.appendChild(postHeader);
+
+      const videoWrapper = document.createElement('div');
+      videoWrapper.className = 'x5yr21d';
+      const video = document.createElement('video');
+      video.src = 'https://video.fbcdn.net/post.mp4';
+      videoWrapper.appendChild(video);
+      article.appendChild(videoWrapper);
+      document.body.appendChild(article);
+
+      const cleanup = installMediaDownloader(window, () => true);
+
+      // Button must NOT be on article (which would cover the 3-dot menu)
+      expect(article.querySelector(':scope > .pg-media-dl-btn')).toBeNull();
+      // Button MUST be inside the video wrapper
+      const btn = videoWrapper.querySelector('.pg-media-dl-btn');
+      expect(btn).not.toBeNull();
+      expect(btn?.classList.contains('pg-story-btn')).toBe(false);
+
+      cleanup();
+    });
+
+    it('attaches with pg-story-btn on story pages to avoid header collision', () => {
+      window.history.replaceState({}, '', '/stories/1693209027396561/UzpfSVNDOjEwODg5Mzc3MTAxNjk4NzE=/');
+
+      const storyWrapper = document.createElement('div');
+      storyWrapper.className = 'x5yr21d';
+      const video = document.createElement('video');
+      video.src = 'https://video.fbcdn.net/story.mp4';
+      storyWrapper.appendChild(video);
+      document.body.appendChild(storyWrapper);
+
+      const cleanup = installMediaDownloader(window, () => true);
+
+      const btn = storyWrapper.querySelector('.pg-media-dl-btn');
+      expect(btn).not.toBeNull();
+      expect(btn?.classList.contains('pg-story-btn')).toBe(true);
+
+      cleanup();
+    });
+
+    it('skips tiny preview cards in horizontal story trays', () => {
+      const trayCard = document.createElement('div');
+      trayCard.className = 'x5yr21d';
+      const video = document.createElement('video');
+      video.src = 'https://video.fbcdn.net/preview.mp4';
+      // Mock tiny preview dimensions (e.g. 100x140 in story tray)
+      video.getBoundingClientRect = () =>
+        ({
+          width: 110,
+          height: 150,
+          top: 0,
+          left: 0,
+          bottom: 150,
+          right: 110,
+          x: 0,
+          y: 0,
+          toJSON: () => {},
+        }) as DOMRect;
+
+      trayCard.appendChild(video);
+      document.body.appendChild(trayCard);
+
+      const cleanup = installMediaDownloader(window, () => true);
+
+      // Must NOT attach download button to tiny preview tiles
+      expect(trayCard.querySelector('.pg-media-dl-btn')).toBeNull();
+
+      cleanup();
     });
   });
 });

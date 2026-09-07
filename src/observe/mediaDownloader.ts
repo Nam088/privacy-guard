@@ -14,14 +14,19 @@ const DOWNLOADER_CSS = `
 .${BTN_CLASS} {
   position: absolute;
   top: 12px;
-  right: 12px;
-  z-index: 2147483640;
+  left: 12px;
+  z-index: 50;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  box-sizing: border-box;
+  padding: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(15, 23, 42, 0.78);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 9999px;
   color: #ffffff;
@@ -29,44 +34,104 @@ const DOWNLOADER_CSS = `
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
-  padding: 6px 12px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+  visibility: hidden;
+  transform: scale(0.92);
+  transition: opacity 0.18s ease, transform 0.18s ease, width 0.2s ease, padding 0.2s ease, background-color 0.18s ease;
   pointer-events: none;
   user-select: none;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
+/* Position for Stories: below top header to avoid avatar & close/mute buttons */
+.${BTN_CLASS}.pg-story-btn {
+  top: 64px;
+  left: auto;
+  right: 12px;
+}
+
+/* Expandable label on hover */
+.${BTN_CLASS} .pg-dl-label {
+  max-width: 0;
+  opacity: 0;
+  margin-left: 0;
+  font-size: 11px;
+  font-weight: 600;
+  transition: max-width 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease, margin 0.15s ease;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.${BTN_CLASS} .pg-dl-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Reveal compact button when hovering media container */
 *:hover > .${BTN_CLASS},
 .${BTN_CLASS}:hover {
-  opacity: 1 !important;
-  transform: translateY(0) !important;
+  opacity: 0.88 !important;
+  visibility: visible !important;
+  transform: scale(1) !important;
   pointer-events: auto !important;
 }
 
+/* Expand button on direct mouse hover */
 .${BTN_CLASS}:hover {
+  opacity: 1 !important;
+  width: auto;
+  min-width: 28px;
+  padding: 0 9px 0 7px;
   background: rgba(15, 23, 42, 0.92);
   border-color: rgba(255, 255, 255, 0.45);
 }
 
+.${BTN_CLASS}:hover .pg-dl-label {
+  max-width: 50px;
+  opacity: 1;
+  margin-left: 5px;
+}
+
 .${BTN_CLASS}:active {
-  transform: scale(0.96) !important;
+  transform: scale(0.95) !important;
 }
 
 .${BTN_CLASS}.pg-loading {
   opacity: 1 !important;
+  visibility: visible !important;
   pointer-events: auto !important;
-  background: rgba(30, 58, 138, 0.85);
+  width: auto;
+  padding: 0 9px 0 7px;
+  background: rgba(30, 58, 138, 0.88);
   cursor: wait;
+}
+
+.${BTN_CLASS}.pg-loading .pg-dl-label {
+  max-width: 70px;
+  opacity: 1;
+  margin-left: 5px;
 }
 
 .${BTN_CLASS}.pg-success {
   opacity: 1 !important;
+  visibility: visible !important;
   pointer-events: auto !important;
-  background: rgba(22, 101, 52, 0.88);
+  width: auto;
+  padding: 0 9px 0 7px;
+  background: rgba(22, 101, 52, 0.9);
   border-color: rgba(74, 222, 128, 0.5);
+}
+
+.${BTN_CLASS}.pg-success .pg-dl-label {
+  max-width: 50px;
+  opacity: 1;
+  margin-left: 5px;
 }
 `;
 
@@ -239,7 +304,9 @@ export function extractTargetVideoId(el: HTMLElement): string | undefined {
   }
 
   // 2. Direct or descendant links containing /reel/<id>, /videos/<id>, /watch/<id>, or /stories/...
-  const link = el.querySelector('a[href*="/reel/"], a[href*="/videos/"], a[href*="/watch/"], a[href*="/stories/"]');
+  const link =
+    el.querySelector('a[href*="/reel/"], a[href*="/videos/"], a[href*="/watch/"], a[href*="/stories/"]') ||
+    el.closest('article, [role="dialog"]')?.querySelector('a[href*="/reel/"], a[href*="/videos/"], a[href*="/watch/"], a[href*="/stories/"]');
   if (link) {
     const href = link.getAttribute('href') || '';
     const linkMatch = href.match(/\/(?:reel|videos?|watch)\/([0-9]+)/);
@@ -610,7 +677,7 @@ export async function downloadMediaFile(url: string, filename: string): Promise<
 /**
  * Attaches the floating download button to a video/story container.
  */
-function attachDownloadButton(container: HTMLElement): void {
+function attachDownloadButton(container: HTMLElement, isStory = false): void {
   if (container.hasAttribute(ATTR_PROCESSED) || container.querySelector(`.${BTN_CLASS}`)) {
     return;
   }
@@ -623,10 +690,11 @@ function attachDownloadButton(container: HTMLElement): void {
   }
 
   const btn = document.createElement('button');
-  btn.className = BTN_CLASS;
+  btn.className = isStory ? `${BTN_CLASS} pg-story-btn` : BTN_CLASS;
   btn.setAttribute('type', 'button');
   btn.setAttribute('aria-label', 'Download media');
-  btn.innerHTML = `${SVG_ICON_DOWNLOAD}<span>Tải HD</span>`;
+  btn.setAttribute('title', 'Tải HD');
+  btn.innerHTML = `<span class="pg-dl-icon">${SVG_ICON_DOWNLOAD}</span><span class="pg-dl-label">Tải HD</span>`;
 
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -634,15 +702,15 @@ function attachDownloadButton(container: HTMLElement): void {
 
     const media = resolveMediaSource(container);
     if (!media) {
-      btn.innerHTML = `${SVG_ICON_DOWNLOAD}<span>Không tìm thấy file</span>`;
+      btn.innerHTML = `<span class="pg-dl-icon">${SVG_ICON_DOWNLOAD}</span><span class="pg-dl-label">Không tìm thấy</span>`;
       setTimeout(() => {
-        btn.innerHTML = `${SVG_ICON_DOWNLOAD}<span>Tải HD</span>`;
+        btn.innerHTML = `<span class="pg-dl-icon">${SVG_ICON_DOWNLOAD}</span><span class="pg-dl-label">Tải HD</span>`;
       }, 2000);
       return;
     }
 
     btn.classList.add('pg-loading');
-    btn.innerHTML = `${SVG_ICON_SPINNER}<span>Đang tải...</span>`;
+    btn.innerHTML = `<span class="pg-dl-icon">${SVG_ICON_SPINNER}</span><span class="pg-dl-label">Đang tải...</span>`;
 
     const ext = media.isVideo ? 'mp4' : 'jpg';
     const sitePrefix = location.hostname.includes('instagram') ? 'instagram' : 'facebook';
@@ -653,13 +721,13 @@ function attachDownloadButton(container: HTMLElement): void {
 
     if (success) {
       btn.classList.add('pg-success');
-      btn.innerHTML = `${SVG_ICON_CHECK}<span>Đã lưu</span>`;
+      btn.innerHTML = `<span class="pg-dl-icon">${SVG_ICON_CHECK}</span><span class="pg-dl-label">Đã lưu</span>`;
       setTimeout(() => {
         btn.classList.remove('pg-success');
-        btn.innerHTML = `${SVG_ICON_DOWNLOAD}<span>Tải HD</span>`;
+        btn.innerHTML = `<span class="pg-dl-icon">${SVG_ICON_DOWNLOAD}</span><span class="pg-dl-label">Tải HD</span>`;
       }, 2000);
     } else {
-      btn.innerHTML = `${SVG_ICON_DOWNLOAD}<span>Thử lại</span>`;
+      btn.innerHTML = `<span class="pg-dl-icon">${SVG_ICON_DOWNLOAD}</span><span class="pg-dl-label">Thử lại</span>`;
     }
   });
 
@@ -693,18 +761,50 @@ export function installMediaDownloader(
       return;
     }
 
-    // 1. Query video elements and attach to their parent containers
+    const isStoryPage = typeof win !== 'undefined' && win.location?.pathname?.includes('/stories/');
+
+    // 1. Query video elements and attach to their immediate media wrapper
     const videos = doc.querySelectorAll('video');
     videos.forEach((video) => {
-      const container = (video.closest('article, [role="dialog"], [data-pagelet^="FeedUnit_"], div[role="feed"] > div, .x1y1aw1k') ||
-        video.parentElement) as HTMLElement | null;
-      if (container) {
-        attachDownloadButton(container);
+      const rect = typeof video.getBoundingClientRect === 'function' ? video.getBoundingClientRect() : null;
+      // Skip tiny preview cards (e.g. story tray previews) or zero-sized hidden players
+      if (rect && rect.width > 0 && rect.height > 0 && (rect.width < 160 || rect.height < 120)) {
+        return;
       }
+
+      const parent = video.parentElement;
+      if (!parent) {
+        return;
+      }
+
+      const isStory = isStoryPage || Boolean(video.closest('div[data-pagelet="StoriesReader"]'));
+
+      // Find the direct video wrapper (stops before climbing to article/dialog/feed)
+      let container: HTMLElement = parent;
+      let curr: HTMLElement | null = parent;
+      while (
+        curr &&
+        curr !== doc.body &&
+        curr.tagName !== 'ARTICLE' &&
+        curr.getAttribute('role') !== 'dialog' &&
+        curr.getAttribute('role') !== 'feed'
+      ) {
+        if (
+          curr.classList.contains('x1ey2m1c') ||
+          curr.classList.contains('x10l6tqk') ||
+          curr.classList.contains('x5yr21d') ||
+          curr.hasAttribute('data-video-id')
+        ) {
+          container = curr;
+          break;
+        }
+        curr = curr.parentElement;
+      }
+
+      attachDownloadButton(container, isStory);
     });
 
     // 2. Scan story viewer containers for image/photo stories
-    const isStoryPage = typeof win !== 'undefined' && win.location?.pathname?.includes('/stories/');
     if (isStoryPage) {
       const storyImages = doc.querySelectorAll<HTMLElement>(
         'div[data-pagelet="StoriesReader"] img, section[role="region"] img, div[role="dialog"] img, div.x5yr21d img, svg image'
@@ -714,17 +814,18 @@ export function installMediaDownloader(
         if (imgEl.closest('div.x5yr21d')?.querySelector('video') || imgEl.parentElement?.querySelector('video')) {
           return;
         }
-        const rect = imgEl.getBoundingClientRect ? imgEl.getBoundingClientRect() : { width: 0, height: 0 };
+        const rect = typeof imgEl.getBoundingClientRect === 'function' ? imgEl.getBoundingClientRect() : null;
         const isSvg = imgEl.tagName.toLowerCase() === 'image';
         const isLarge = isSvg
-          ? rect.width >= 150 && rect.height >= 150
-          : rect.width >= 150 || ((imgEl as HTMLImageElement).naturalWidth ?? 0) >= 150;
+          ? !rect || rect.width === 0 || (rect.width >= 150 && rect.height >= 150)
+          : !rect || rect.width === 0 || rect.width >= 150 || ((imgEl as HTMLImageElement).naturalWidth ?? 0) >= 150;
 
         if (isLarge) {
-          const container = (imgEl.closest('article, [role="dialog"], div.x5yr21d, section') ||
+          // Attach strictly to story card container or parent, never to dialog or article
+          const container = (imgEl.closest('div.x5yr21d, section[role="region"], div[data-pagelet="StoriesReader"]') ||
             imgEl.parentElement) as HTMLElement | null;
-          if (container) {
-            attachDownloadButton(container);
+          if (container && container.tagName !== 'BODY' && container.getAttribute('role') !== 'dialog') {
+            attachDownloadButton(container, true);
           }
         }
       });
