@@ -83,7 +83,7 @@ node tools/protocol-map.mjs validate
    - Location: Bottom-Right dock (`x > 1000, y > 700`, width `328px`).
    - Composer: `div[role="region"][aria-label="Công cụ soạn cuộc trò chuyện"] div[role="textbox"][contenteditable="true"]`.
    - **98.9% Traffic is `port.postMessage`** to `SharedWorker: MAWMainV4WebWorkerBundle`.
-   - Reason legacy tools fails: legacy tools only hooks `WebSocket.send` and has zero awareness of `MessagePort` or Web Workers.
+   - Why basic extensions fail: Simple extensions only hook `WebSocket.send` and have zero awareness of `MessagePort` or Web Workers.
    - Privacy Guard intercepts via `MAWBridgeFireAndForget` runtime hook and `port.postMessage` wrapper.
 
 2. **Stop Typing Signal (`USER_STOP_TYPING`)**:

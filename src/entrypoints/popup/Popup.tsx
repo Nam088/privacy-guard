@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { getActiveSite } from '@/core/activeSite';
 import { ensureAllUrlsPermission } from '@/core/permissions';
+import { formatVersionBadge, getExtensionVersion } from '@/core/version';
 import {
   applyTheme,
   initSettingsStore,
@@ -176,6 +177,7 @@ export function Popup({ initialSite }: PopupProps = {}) {
           <BrandHeader
             title={dict.app.name}
             subtitle={dict.app.socialAssistant}
+            version={formatVersionBadge(getExtensionVersion())}
           />
 
           {/* Master Switch Card */}
@@ -214,6 +216,7 @@ export function Popup({ initialSite }: PopupProps = {}) {
           onThemeChange={(t) => void setTheme(t)}
           locale={activeLocale}
           onLocaleChange={(l) => void setLocale(l)}
+          trustCaption={dict.app.trustCaption}
         />
       </aside>
 

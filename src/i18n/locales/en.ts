@@ -9,6 +9,7 @@ export const en: TranslationDictionary = {
     openSiteHint:
       'Open Facebook, Messenger or Instagram to see the controls for that site. The settings below apply everywhere.',
     footerNotice: 'Works only on your own session. Privacy Guard sends no data anywhere.',
+    trustCaption: '100% On-Device • Zero Telemetry',
     socialAssistant: 'Social Privacy Assistant',
     webAssistant: 'Web Privacy Assistant',
     activeProtectionSummary: (siteName: string) => `Active protection running on ${siteName}.`,

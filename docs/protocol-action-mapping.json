@@ -21,10 +21,6 @@
         "runtimeModule": "MAWBridgeFireAndForget.fireAndForget('backend', 'sendChatStateFromComposer', threadKey, state)",
         "gatewayRealtime": "wss://gateway.facebook.com/ws/realtime?x-dgw-appid=2220391788200892",
         "gatewayStreamController": "wss://gateway.facebook.com/ws/streamcontroller?x-dgw-appid=2220391788200892"
-      },
-      "competitorComparison": {
-        "legacySecurity": "HOÀN TOÀN TÊ LIỆT trên Chat Nổi (legacy tools chỉ hook WebSocket.send cơ bản, không có hook MessagePort, không can thiệp được Web Worker hay MAWBridge, nên khi người dùng gõ trong chat nổi thì legacy tools không thể chặn được).",
-        "privacyGuard": "CHẶN HOÀN HẢO nhờ can thiệp đa tầng: vừa hook MessagePort/Worker, vừa bẫy module MAWBridgeFireAndForget qua __d/require, vừa lọc frame nhị phân WebSocket."
       }
     },
     "messenger_web_full": {

@@ -14,6 +14,7 @@ export interface TranslationDictionary {
     readonly protection: string;
     readonly openSiteHint: string;
     readonly footerNotice: string;
+    readonly trustCaption: string;
     readonly socialAssistant: string;
     readonly webAssistant: string;
     readonly activeProtectionSummary: (siteName: string) => string;

@@ -115,7 +115,7 @@ ws.onmessage = (event) => {
 * **Surface**: Messenger Web, Floating Chat Tab (`facebook_floating_chat_tab`).
 * **Critical Protocol Path**:
   * 98.9% of modern chat traffic traverses `port.postMessage` to `SharedWorker: MAWMainV4WebWorkerBundle`.
-  * Traditional `WebSocket.send` hooks (like legacy tools) fail because they miss worker ports entirely.
+  * Traditional `WebSocket.send` hooks fail because they miss worker ports entirely.
 * **Verification Criteria**:
   * `USER_SEND_MESSAGE`: Outbound message payloads (`body`, `text`, `offline_threading_id`) MUST NEVER BE DROPPED. Dropping outbound messages causes the red "Failed to send" error.
   * `USER_STOP_TYPING`: Idle/stop signal (`state: 0`, `state: "IDLE"`) MUST BE PASSED THROUGH. Dropping stop signals causes the recipient's 3-dots typing indicator to freeze permanently.

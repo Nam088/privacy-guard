@@ -9,6 +9,7 @@ export const vi: TranslationDictionary = {
     openSiteHint:
       'Mở Facebook, Messenger hoặc Instagram để điều khiển cho trang đó. Các cài đặt bên dưới áp dụng cho mọi trang web.',
     footerNotice: 'Chỉ hoạt động trên phiên của bạn. Privacy Guard không gửi dữ liệu đi bất cứ đâu.',
+    trustCaption: '100% trên máy bạn • Không thu thập dữ liệu',
     socialAssistant: 'Trợ lý bảo vệ mạng xã hội',
     webAssistant: 'Trợ lý bảo vệ web',
     activeProtectionSummary: (siteName: string) => `Đang bảo vệ riêng tư & lọc sạch trên ${siteName}.`,

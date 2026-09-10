@@ -5,6 +5,8 @@ export interface SidebarFooterProps {
   onThemeChange: (theme: 'light' | 'dark' | 'system') => void;
   locale: string;
   onLocaleChange: (locale: 'en' | 'vi') => void;
+  /** Localised trust caption, for example "100% On-Device • Zero Telemetry". */
+  trustCaption: string;
 }
 
 export function SidebarFooter({
@@ -12,6 +14,7 @@ export function SidebarFooter({
   onThemeChange,
   locale,
   onLocaleChange,
+  trustCaption,
 }: SidebarFooterProps) {
   const isEn = locale === 'en';
 
@@ -107,7 +110,7 @@ export function SidebarFooter({
       {/* Subtle Trust Caption */}
       <div class="flex items-center justify-center gap-1.5 pt-0.5 text-[10.5px] font-medium text-text-muted/75 tracking-tight whitespace-nowrap">
         <LockCheckIcon size={12.5} class="text-emerald-500/90 shrink-0" />
-        <span>100% On-Device • Zero Telemetry</span>
+        <span>{trustCaption}</span>
       </div>
     </div>
   );
