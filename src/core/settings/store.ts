@@ -7,6 +7,7 @@ export const isReady = signal(false);
 
 let unwatch: (() => void) | undefined;
 let revision = 0;
+let initPromise: Promise<void> | undefined;
 
 /**
  * Loads settings and starts watching storage for changes.
@@ -23,27 +24,55 @@ let revision = 0;
  * Everything else should read the `settings` signal directly rather than calling this.
  */
 export async function initSettingsStore(): Promise<void> {
-  const startedAt = revision;
-
-  unwatch?.();
-  unwatch = settingsItem.watch((next) => {
-    if (next) {
-      settings.value = next;
-    }
-  });
-
-  const loaded = await readSettings();
-  if (revision === startedAt) {
-    settings.value = loaded;
+  if (initPromise) {
+    return initPromise;
   }
 
-  isReady.value = true;
+  initPromise = (async () => {
+    const startedAt = revision;
+
+    unwatch?.();
+    unwatch = settingsItem.watch((next) => {
+      if (next) {
+        settings.value = next;
+      }
+    });
+
+    const loaded = await readSettings();
+    if (revision === startedAt) {
+      settings.value = loaded;
+    }
+
+    isReady.value = true;
+  })();
+
+  return initPromise;
 }
 
 export function stopSettingsStore(): void {
   unwatch?.();
   unwatch = undefined;
+  initPromise = undefined;
   isReady.value = false;
+}
+
+/**
+ * Synchronously applies the given theme token to document.documentElement.
+ */
+export function applyTheme(theme: 'system' | 'light' | 'dark'): void {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  if (theme === 'system') {
+    delete root.dataset.theme;
+    root.classList.remove('dark');
+  } else {
+    root.dataset.theme = theme;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }
 }
 
 async function commit(next: Settings): Promise<void> {

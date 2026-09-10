@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.1.0",
+  "lastUpdated": "2026-09-07T00:08:40+07:00",
+  "description": "Ground-truth mapping between UI actions, DOM selectors, network protocols, gateways, and interception rules across Facebook & Messenger surfaces.",
+  "surfaces": {
+    "facebook_floating_chat_tab": {
+      "name": "Facebook Floating Chat Tab (Chat Nổi góc dưới bên phải màn hình)",
+      "urlPattern": "*://web.facebook.com/*",
+      "dockPosition": "Bottom-Right (x > 1000, y > 700, width ~ 328px)",
+      "containerSelector": "div[role='region'][aria-label='Công cụ soạn cuộc trò chuyện'], div[data-pagelet='CometChatTab']",
+      "composerSelector": "div[role='textbox'][contenteditable='true']",
+      "headerControls": {
+        "minimize": "div[role='button'][aria-label='Thu nhỏ đoạn chat']",
+        "close": "div[role='button'][aria-label='Đóng đoạn chat']",
+        "settings": "div[role='button'][aria-label='Cài đặt đoạn chat']"
+      },
+      "networkProtocols": {
+        "primaryChannel": "MessagePort.postMessage (Chiếm 98.9% lưu lượng khi gõ trên chat nổi)",
+        "armadilloSharedWorker": "SharedWorker: MAWMainV4WebWorkerBundle (/static_resources/webworker/init_script/?worker_type=MODULE)",
+        "runtimeModule": "MAWBridgeFireAndForget.fireAndForget('backend', 'sendChatStateFromComposer', threadKey, state)",
+        "gatewayRealtime": "wss://gateway.facebook.com/ws/realtime?x-dgw-appid=2220391788200892",
+        "gatewayStreamController": "wss://gateway.facebook.com/ws/streamcontroller?x-dgw-appid=2220391788200892"
+      },
+      "competitorComparison": {
+        "legacySecurity": "HOÀN TOÀN TÊ LIỆT trên Chat Nổi (legacy tools chỉ hook WebSocket.send cơ bản, không có hook MessagePort, không can thiệp được Web Worker hay MAWBridge, nên khi người dùng gõ trong chat nổi thì legacy tools không thể chặn được).",
+        "privacyGuard": "CHẶN HOÀN HẢO nhờ can thiệp đa tầng: vừa hook MessagePort/Worker, vừa bẫy module MAWBridgeFireAndForget qua __d/require, vừa lọc frame nhị phân WebSocket."
+      }
+    },
+    "messenger_web_full": {
+      "name": "Messenger Web Full Page Interface",
+      "urlPattern": "*://www.messenger.com/*",
+      "containerSelector": "div[role='main']",
+      "composerSelector": "div[role='textbox'][contenteditable='true']",
+      "threadListSelector": "[role='navigation'] [role='grid'] [role='row'], a[href*='/t/']",
+      "networkProtocols": {
+        "gatewayRealtime": "wss://gateway.messenger.com/ws/realtime?x-dgw-appid=772021112871879",
+        "gatewayLightspeed": "wss://gateway.messenger.com/ws/lightspeed?x-dgw-appid=772021112871879",
+        "gatewayStreamController": "wss://gateway.messenger.com/ws/streamcontroller?x-dgw-appid=772021112871879",
+        "armadilloWorker": "SharedWorker: MAWMainV4WebWorkerBundle",
+        "workerChannel": "MessagePort.postMessage"
+      }
+    },
+    "facebook_feed": {
+      "name": "Facebook Feed & Stories",
+      "urlPattern": "*://web.facebook.com/*",
+      "containerSelector": "[role='feed'], [data-pagelet='Feed']",
+      "articleSelector": "[role='article'], [data-pagelet*='FeedUnit']",
+      "storyTraySelector": "[aria-label='Tin'], [aria-label='Stories'], [role='grid'][aria-label*='tin']",
+      "networkProtocols": {
+        "graphqlEndpoint": "/api/graphql/",
+        "telemetryDwellEndpoint": "/ajax/merlin/dwell/",
+        "bootloaderEndpoint": "/ajax/bootloader-endpoint/"
+      }
+    }
+  },
+  "actions": {
+    "USER_TYPING": {
+      "description": "Người dùng gõ phím vào khung soạn thảo (cả Messenger toàn màn hình và Chat Nổi Facebook).",
+      "triggerEvents": ["input", "keydown"],
+      "liveTestMetrics": {
+        "floatingChatTab": {
+          "totalEventsPerBurst": 91,
+          "portPostMessageCount": 90,
+          "websocketSendCount": 1,
+          "typingLabeledCount": 63
+        }
+      },
+      "emittedNetworkEvents": [
+        {
+          "layer": "Worker Channel (SharedWorker RPC)",
+          "worker": "MAWMainV4WebWorkerBundle",
+          "method": "port.postMessage(array of requests)",
+          "exactPayloadSchema": "[{\"type\":\"request\",\"content\":{\"namespace\":\"backend\",\"name\":\"sendChatStateFromComposer\",\"arg\":{\"threadId\":\"<threadId>\",\"state\":1}}}]",
+          "channel": "MessagePort.postMessage to SharedWorker"
+        },
+        {
+          "layer": "Runtime Bridge (MAWBridge)",
+          "module": "MAWBridge.getBridge() / MAWBridgeFireAndForget",
+          "method": "bridge.fireAndForget('backend', 'sendChatStateFromComposer', { threadId, state: 1 })",
+          "channel": "Runtime bridge instance"
+        },
+        {
+          "layer": "WebSocket DGW Frame",
+          "gateways": [
+            "wss://gateway.messenger.com/ws/realtime",
+            "wss://gateway.facebook.com/ws/realtime",
+            "wss://gateway.facebook.com/ws/streamcontroller"
+          ],
+          "kind": "websocket.send",
+          "dgwBinaryPattern": "Header với appid 2220391788200892/772021112871879 + payload mang threadId/thread_key và state"
+        }
+      ],
+      "privacyGuardInterception": {
+        "rule": "src/observe/mawBridge.ts and src/sites/facebook/rules.ts (FacebookTypingRule)",
+        "behaviorWhenOff": "Pass-through 100% tự nhiên không cản trở",
+        "behaviorWhenOn": "Chặn và drop tín hiệu TYPING (1) ngay tại hàm bẫy bridge trước khi đẩy vào Worker; trả về resolved promise để không làm crash UI composer."
+      }
+    },
+    "USER_STOP_TYPING": {
+      "description": "Người dùng dừng gõ (> 1500ms), xoá hết chữ hoặc nhấp chuột ra ngoài (blur).",
+      "triggerEvents": ["blur", "idle_timer"],
+      "emittedNetworkEvents": [
+        {
+          "layer": "Runtime Bridge (MAWBridge)",
+          "module": "WAChatState / MAWBridgeFireAndForget",
+          "stateValue": { "IDLE": 0, "STOP": 0, "PAUSE": 0 },
+          "channel": "port.postMessage"
+        }
+      ],
+      "privacyGuardInterception": {
+        "criticalSafetyRequirement": "TUYỆT ĐỐI KHÔNG ĐƯỢC CHẶN. Nếu chặn tín hiệu dừng gõ, đối phương sẽ bị kẹt biểu tượng 3 chấm vĩnh viễn.",
+        "behavior": "Hàm isStopState(args[2]) nhận diện state 0 (IDLE) và luôn cho qua an toàn kể cả khi bật hideTyping."
+      }
+    },
+    "USER_SEND_MESSAGE": {
+      "description": "Người dùng bấm Enter hoặc click nút Gửi tin nhắn.",
+      "triggerEvents": ["keydown[Enter]", "click[aria-label='Gửi']"],
+      "emittedNetworkEvents": [
+        {
+          "layer": "Armadillo E2EE / Lightspeed Task",
+          "payload": "Encrypted message payload hoặc task LSInsertNewMessageRange",
+          "gateways": ["wss://gateway.messenger.com/ws/lightspeed", "wss://gateway.facebook.com/ws/realtime"]
+        }
+      ],
+      "privacyGuardInterception": {
+        "criticalSafetyRequirement": "TUYỆT ĐỐI KHÔNG ĐƯỢC CHẶN NHẦM. Mọi frame gửi tin thật phải luôn được cho qua 100%."
+      }
+    },
+    "USER_OPEN_CHAT": {
+      "description": "Người dùng nhấp mở cuộc trò chuyện hoặc click mở Chat Nổi.",
+      "triggerEvents": ["click[role='row']", "click[role='gridcell']", "click a[href*='/t/']"],
+      "emittedNetworkEvents": [
+        {
+          "layer": "WebSocket DGW / Lightspeed",
+          "taskLabels": [
+            { "id": 21, "description": "Read Receipt (thread_key, watermark_timestamp)" },
+            { "id": 72, "description": "Inbox Thread Read Watermark" },
+            { "id": 6, "description": "Inbox Root Watermark" }
+          ]
+        }
+      ],
+      "privacyGuardInterception": {
+        "rule": "FacebookReadReceiptRule & FacebookInboxWatermarkRule",
+        "behaviorWhenOff": "Pass-through 100%",
+        "behaviorWhenOn": "Chặn frame đánh dấu đã xem; lưu vết timestamp vào ReplayBuffer để gửi bù khi cần."
+      }
+    }
+  },
+  "anomalyDefinitions": {
+    "OUTBOUND_MESSAGE_BLOCKED": {
+      "level": "CRITICAL",
+      "condition": "Action === 'USER_SEND_MESSAGE' AND Event.kind.includes('suppressed')",
+      "impact": "Tin nhắn thật của người dùng bị chặn nhầm, không gửi được tới Meta."
+    },
+    "STOP_TYPING_SUPPRESSED": {
+      "level": "HIGH",
+      "condition": "Action === 'USER_STOP_TYPING' AND Event.kind.includes('suppressed')",
+      "impact": "Tín hiệu dừng gõ bị chặn nhầm làm bên nhận bị kẹt 3 chấm vĩnh viễn."
+    }
+  }
+}

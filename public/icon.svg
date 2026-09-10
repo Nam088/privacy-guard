@@ -19,10 +19,13 @@
   <rect x="102" y="158" width="308" height="200" rx="56" fill="#1E40AF" />
   
   <!-- Big Friendly Glowing Eyes -->
-  <circle cx="190" cy="258" r="42" fill="#38BDF8" />
-  <circle cx="322" cy="258" r="42" fill="#38BDF8" />
+  <circle cx="190" cy="254" r="42" fill="#38BDF8" />
+  <circle cx="322" cy="254" r="42" fill="#38BDF8" />
   
   <!-- Eye Sparkle Highlights -->
-  <circle cx="178" cy="246" r="14" fill="#FFFFFF" />
-  <circle cx="310" cy="246" r="14" fill="#FFFFFF" />
+  <circle cx="178" cy="242" r="14" fill="#FFFFFF" />
+  <circle cx="310" cy="242" r="14" fill="#FFFFFF" />
+
+  <!-- Warm Friendly Smile -->
+  <path d="M 226,296 Q 256,316 286,296" stroke="#38BDF8" stroke-width="11" stroke-linecap="round" fill="none" />
 </svg>
