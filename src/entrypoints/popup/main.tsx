@@ -12,7 +12,7 @@ async function bootstrap() {
   // This guarantees the first visual paint immediately renders the persisted user configuration,
   // preventing toggle switch animation lag, layout shifts, or flash of default states.
   try {
-    const [_, activeSite] = await Promise.all([
+    const [, activeSite] = await Promise.all([
       initSettingsStore(),
       getActiveSite().catch(() => null),
     ]);
