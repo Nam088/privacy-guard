@@ -41,7 +41,7 @@ export function MasterSwitchCard({
         </div>
 
         {/* Master Switch */}
-        <div class="shrink-0 flex items-center">
+        <div class="shrink-0 flex items-center relative">
           <input
             id="master-switch"
             type="checkbox"

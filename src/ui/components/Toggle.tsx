@@ -20,8 +20,8 @@ export function Toggle({
   onChange,
 }: ToggleProps) {
   const containerClass = disabled
-    ? 'group flex items-center gap-3.5 px-3.5 py-2.5 cursor-not-allowed opacity-40 select-none'
-    : 'group flex items-center gap-3.5 px-3.5 py-2.5 cursor-pointer hover:bg-surface-muted/50 active:bg-surface-muted/80 transition-colors duration-150 select-none';
+    ? 'group relative flex items-center gap-3.5 px-3.5 py-2.5 cursor-not-allowed opacity-40 select-none'
+    : 'group relative flex items-center gap-3.5 px-3.5 py-2.5 cursor-pointer hover:bg-surface-muted/50 active:bg-surface-muted/80 transition-colors duration-150 select-none';
 
   return (
     <label class={containerClass}>
@@ -49,7 +49,7 @@ export function Toggle({
         )}
       </div>
 
-      <div class="shrink-0 flex items-center">
+      <div class="shrink-0 flex items-center relative">
         <input
           type="checkbox"
           role="switch"
