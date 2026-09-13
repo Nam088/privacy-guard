@@ -140,11 +140,11 @@ describe('featureSearch', () => {
     it('supports multi-token lazy search e.g. "fb tim kiem" or "ig reels"', () => {
       const fbSearch = searchFeatures(items, 'fb tim kiem');
       expect(fbSearch.length).toBeGreaterThanOrEqual(1);
-      expect(fbSearch[0].item.key).toBe('facebook.stealthSearch');
+      expect(fbSearch[0]!.item.key).toBe('facebook.stealthSearch');
 
       const igReels = searchFeatures(items, 'ig reels');
       expect(igReels.length).toBeGreaterThanOrEqual(1);
-      expect(igReels[0].item.key).toBe('instagram.hideReels');
+      expect(igReels[0]!.item.key).toBe('instagram.hideReels');
     });
 
     it('supports scope filtering', () => {
@@ -153,11 +153,11 @@ describe('featureSearch', () => {
 
       const fbOnly = searchFeatures(items, 'typing', { scope: 'facebook' });
       expect(fbOnly.length).toBe(1);
-      expect(fbOnly[0].item.scope).toBe('facebook');
+      expect(fbOnly[0]!.item.scope).toBe('facebook');
 
       const igOnly = searchFeatures(items, 'typing', { scope: 'instagram' });
       expect(igOnly.length).toBe(1);
-      expect(igOnly[0].item.scope).toBe('instagram');
+      expect(igOnly[0]!.item.scope).toBe('instagram');
     });
 
     it('returns empty array when no features match', () => {
@@ -174,7 +174,7 @@ describe('featureSearch', () => {
       const results = searchFeatures(items, 'reels');
       expect(results.length).toBeGreaterThanOrEqual(2);
       // Top results should have high scores
-      expect(results[0].score).toBeGreaterThanOrEqual(70);
+      expect(results[0]!.score).toBeGreaterThanOrEqual(70);
     });
   });
 });

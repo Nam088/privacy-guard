@@ -40,6 +40,9 @@ export function applyCanvasNoise(data: Uint8ClampedArray): void {
   // Modify LSB (least significant bit) on a deterministic sample of pixels
   // Every 64th pixel (stride 256 bytes) toggle lowest bit of red channel
   for (let i = 0; i < data.length; i += 256) {
-    data[i] = data[i] ^ 1;
+    const val = data[i];
+    if (typeof val === 'number') {
+      data[i] = val ^ 1;
+    }
   }
 }

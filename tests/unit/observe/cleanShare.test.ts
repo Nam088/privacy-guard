@@ -39,7 +39,7 @@ describe('cleanShare hook', () => {
   });
 
   it('handles copy event by modifying clipboardData', () => {
-    const listeners: Record<string, (e: any) => void> = {};
+    const listeners: Record<string, (e: Event) => void> = {};
     const mockWin = {
       addEventListener: vi.fn((event, handler) => {
         listeners[event] = handler;
@@ -71,7 +71,7 @@ describe('cleanShare hook', () => {
       stopImmediatePropagation: vi.fn(),
     };
 
-    listeners['copy'](mockEvent);
+    listeners['copy']?.(mockEvent as unknown as Event);
 
     expect(defaultPrevented).toBe(true);
     expect(clipboardDataContent).toBe('https://www.instagram.com/reel/123/');

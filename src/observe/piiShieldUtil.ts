@@ -44,7 +44,7 @@ export function luhnCheck(digits: string): boolean {
   let sum = 0;
   let isAlternate = false;
   for (let i = clean.length - 1; i >= 0; i--) {
-    let n = parseInt(clean[i], 10);
+    let n = parseInt(clean.charAt(i), 10);
     if (isAlternate) {
       n *= 2;
       if (n > 9) {
@@ -157,7 +157,7 @@ export function detectApiKeys(text: string): PiiMatch[] {
   }
 
   // OpenAI API Key
-  const openaiRegex = /\bsk-[a-zA-Z0-9_\-]{20,}\b/g;
+  const openaiRegex = /\bsk-[a-zA-Z0-9_-]{20,}\b/g;
   while ((match = openaiRegex.exec(text)) !== null) {
     const raw = match[0];
     const suffix = raw.slice(-4);
@@ -219,7 +219,7 @@ export function detectApiKeys(text: string): PiiMatch[] {
   }
 
   // Slack Token
-  const slackRegex = /\bxox[baprs]-[0-9A-Za-z\-]{10,}\b/g;
+  const slackRegex = /\bxox[baprs]-[-0-9A-Za-z]{10,}\b/g;
   while ((match = slackRegex.exec(text)) !== null) {
     const raw = match[0];
     const prefix = raw.slice(0, 5);
@@ -263,6 +263,9 @@ export function detectPhoneNumbers(text: string): PiiMatch[] {
   while ((match = phoneRegex.exec(text)) !== null) {
     const full = match[0];
     const raw = match[1];
+    if (!raw) {
+      continue;
+    }
     const offset = full.indexOf(raw);
     const startIndex = match.index + offset;
     const prefix = raw.slice(0, raw.startsWith('+84') ? 5 : 3);

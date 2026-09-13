@@ -82,7 +82,11 @@ export function Popup({ initialSite }: PopupProps = {}) {
       if (resolved?.id === 'instagram') {
         setPlatformTab((prev) => {
           if (prev !== 'instagram') {
-            try { localStorage.setItem('pg_last_tab', 'instagram'); } catch {}
+            try {
+              localStorage.setItem('pg_last_tab', 'instagram');
+            } catch {
+              // ignore storage errors
+            }
             return 'instagram';
           }
           return prev;
@@ -90,7 +94,11 @@ export function Popup({ initialSite }: PopupProps = {}) {
       } else if (resolved?.id === 'facebook') {
         setPlatformTab((prev) => {
           if (prev !== 'facebook') {
-            try { localStorage.setItem('pg_last_tab', 'facebook'); } catch {}
+            try {
+              localStorage.setItem('pg_last_tab', 'facebook');
+            } catch {
+              // ignore storage errors
+            }
             return 'facebook';
           }
           return prev;

@@ -29,14 +29,12 @@ describe('installAntiFingerprintHook', () => {
     const uninstall = installAntiFingerprintHook(fakeWin, () => active);
 
     expect(fakeNav.hardwareConcurrency).toBe(STANDARD_HARDWARE_CONCURRENCY);
-    // @ts-expect-error deviceMemory
     expect(fakeNav.deviceMemory).toBe(STANDARD_DEVICE_MEMORY);
     expect(fakeWin.screen.colorDepth).toBe(STANDARD_COLOR_DEPTH);
 
     // When deactivated
     active = false;
     expect(fakeNav.hardwareConcurrency).toBe(16);
-    // @ts-expect-error deviceMemory
     expect(fakeNav.deviceMemory).toBe(32);
     expect(fakeWin.screen.colorDepth).toBe(30);
 

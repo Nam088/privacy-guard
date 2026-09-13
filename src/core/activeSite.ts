@@ -23,7 +23,7 @@ export async function getActiveSite(timeoutMs: number = 300): Promise<SiteModule
     );
     const tabs = (await Promise.race([queryPromise, timeoutPromise])) as TabLike[];
     return resolveActiveSite(tabs);
-  } catch (error) {
+  } catch {
     return null;
   }
 }

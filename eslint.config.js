@@ -21,7 +21,7 @@ const EXTENSION_API_IMPORTS = [
 ];
 
 export default tseslint.config(
-  { ignores: ['.wxt/**', '.output/**', 'node_modules/**', 'scratch/**', 'tools/**'] },
+  { ignores: ['.wxt/**', '.output/**', 'node_modules/**', 'scratch/**', 'tools/**', 'fbchat-v2/**', '.dev-profile/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

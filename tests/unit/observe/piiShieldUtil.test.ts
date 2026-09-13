@@ -27,8 +27,8 @@ describe('piiShieldUtil', () => {
       const text = 'Số thẻ thanh toán của tôi là 4532 0151 1283 0366 bạn nhé';
       const matches = detectCreditCards(text);
       expect(matches.length).toBe(1);
-      expect(matches[0].category).toBe('credit_card');
-      expect(matches[0].masked).toBe('•••• •••• •••• 0366');
+      expect(matches[0]!.category).toBe('credit_card');
+      expect(matches[0]!.masked).toBe('•••• •••• •••• 0366');
     });
 
     it('ignores non-card 16-digit random strings that fail Luhn', () => {
@@ -43,15 +43,15 @@ describe('piiShieldUtil', () => {
       const text = 'CCCD của anh: 001098012345 nhe';
       const matches = detectVietnameseCccd(text);
       expect(matches.length).toBe(1);
-      expect(matches[0].category).toBe('cccd_cmnd');
-      expect(matches[0].masked).toBe('001•••••••45');
+      expect(matches[0]!.category).toBe('cccd_cmnd');
+      expect(matches[0]!.masked).toBe('001•••••••45');
     });
 
     it('detects 9-digit CMND', () => {
       const text = 'So CMND cu: 123456789';
       const matches = detectVietnameseCccd(text);
       expect(matches.length).toBe(1);
-      expect(matches[0].masked).toBe('123••••89');
+      expect(matches[0]!.masked).toBe('123••••89');
     });
   });
 
@@ -68,36 +68,36 @@ describe('piiShieldUtil', () => {
       const text = 'AIzaSyA1234567890abcdef1234567890abcdef';
       const matches = detectApiKeys(text);
       expect(matches.length).toBe(1);
-      expect(matches[0].masked).toContain('AIza••••••••');
+      expect(matches[0]!.masked).toContain('AIza••••••••');
     });
 
     it('detects GitHub PAT', () => {
       const text = 'token: ghp_123456789012345678901234567890123456';
       const matches = detectApiKeys(text);
       expect(matches.length).toBe(1);
-      expect(matches[0].masked).toContain('ghp_••••••••');
+      expect(matches[0]!.masked).toContain('ghp_••••••••');
     });
 
     it('detects AWS Access Key', () => {
       const text = 'aws: AKIAIOSFODNN7EXAMPLE';
       const matches = detectApiKeys(text);
       expect(matches.length).toBe(1);
-      expect(matches[0].category).toBe('api_key');
+      expect(matches[0]!.category).toBe('api_key');
     });
 
     it('detects Private Key block', () => {
       const text = `-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----`;
       const matches = detectApiKeys(text);
       expect(matches.length).toBe(1);
-      expect(matches[0].category).toBe('private_key');
-      expect(matches[0].masked).toBe('[REDACTED_PRIVATE_KEY]');
+      expect(matches[0]!.category).toBe('private_key');
+      expect(matches[0]!.masked).toBe('[REDACTED_PRIVATE_KEY]');
     });
 
     it('detects JWT session token', () => {
       const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozG4m1e_pM7s5g_nO4s6X7k3v2u1y';
       const matches = detectApiKeys(jwt);
       expect(matches.length).toBe(1);
-      expect(matches[0].category).toBe('jwt_token');
+      expect(matches[0]!.category).toBe('jwt_token');
     });
   });
 
@@ -106,7 +106,7 @@ describe('piiShieldUtil', () => {
       const text = 'Lien he so 0912345678 hoac +84987654321';
       const matches = detectPhoneNumbers(text);
       expect(matches.length).toBe(2);
-      expect(matches[0].masked).toBe('091••••678');
+      expect(matches[0]!.masked).toBe('091••••678');
     });
   });
 

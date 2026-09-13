@@ -92,14 +92,16 @@ describe('piiShield hook', () => {
 
   describe('installPiiShieldHook', () => {
     it('intercepts paste with sensitive PII when active', () => {
-      let active = true;
+      const active = true;
       const undo = installPiiShieldHook(window, () => active);
 
-      const pasteEvent = new Event('paste', { bubbles: true, cancelable: true }) as any;
-      pasteEvent.clipboardData = {
-        getData: (type: string) =>
-          type === 'text/plain' ? 'So the visa 4532 0151 1283 0366 cua minh' : '',
-      };
+      const pasteEvent = new Event('paste', { bubbles: true, cancelable: true }) as unknown as ClipboardEvent;
+      Object.defineProperty(pasteEvent, 'clipboardData', {
+        value: {
+          getData: (type: string) =>
+            type === 'text/plain' ? 'So the visa 4532 0151 1283 0366 cua minh' : '',
+        },
+      });
 
       const preventDefaultSpy = vi.spyOn(pasteEvent, 'preventDefault');
       const stopImmediateSpy = vi.spyOn(pasteEvent, 'stopImmediatePropagation');
@@ -114,13 +116,15 @@ describe('piiShield hook', () => {
     });
 
     it('ignores normal safe text paste', () => {
-      let active = true;
+      const active = true;
       const undo = installPiiShieldHook(window, () => active);
 
-      const pasteEvent = new Event('paste', { bubbles: true, cancelable: true }) as any;
-      pasteEvent.clipboardData = {
-        getData: (type: string) => (type === 'text/plain' ? 'Xin chao cac ban' : ''),
-      };
+      const pasteEvent = new Event('paste', { bubbles: true, cancelable: true }) as unknown as ClipboardEvent;
+      Object.defineProperty(pasteEvent, 'clipboardData', {
+        value: {
+          getData: (type: string) => (type === 'text/plain' ? 'Xin chao cac ban' : ''),
+        },
+      });
 
       const preventDefaultSpy = vi.spyOn(pasteEvent, 'preventDefault');
       window.dispatchEvent(pasteEvent);
@@ -134,11 +138,13 @@ describe('piiShield hook', () => {
     it('does not intercept paste when feature is inactive', () => {
       const undo = installPiiShieldHook(window, () => false);
 
-      const pasteEvent = new Event('paste', { bubbles: true, cancelable: true }) as any;
-      pasteEvent.clipboardData = {
-        getData: (type: string) =>
-          type === 'text/plain' ? 'The 4532 0151 1283 0366 cua minh' : '',
-      };
+      const pasteEvent = new Event('paste', { bubbles: true, cancelable: true }) as unknown as ClipboardEvent;
+      Object.defineProperty(pasteEvent, 'clipboardData', {
+        value: {
+          getData: (type: string) =>
+            type === 'text/plain' ? 'The 4532 0151 1283 0366 cua minh' : '',
+        },
+      });
 
       const preventDefaultSpy = vi.spyOn(pasteEvent, 'preventDefault');
       window.dispatchEvent(pasteEvent);
@@ -150,15 +156,17 @@ describe('piiShield hook', () => {
     });
 
     it('dismisses prompt on Escape key', () => {
-      let active = true;
+      const active = true;
       const undo = installPiiShieldHook(window, () => active);
 
       // Trigger prompt
-      const pasteEvent = new Event('paste', { bubbles: true, cancelable: true }) as any;
-      pasteEvent.clipboardData = {
-        getData: (type: string) =>
-          type === 'text/plain' ? 'Key: sk-proj-1234567890abcdef1234567890' : '',
-      };
+      const pasteEvent = new Event('paste', { bubbles: true, cancelable: true }) as unknown as ClipboardEvent;
+      Object.defineProperty(pasteEvent, 'clipboardData', {
+        value: {
+          getData: (type: string) =>
+            type === 'text/plain' ? 'Key: sk-proj-1234567890abcdef1234567890' : '',
+        },
+      });
       window.dispatchEvent(pasteEvent);
       expect(document.getElementById(PII_PROMPT_ID)).not.toBeNull();
 

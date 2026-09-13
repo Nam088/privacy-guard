@@ -137,6 +137,9 @@ export function buildSuppressionConfig(
     scrambleDwellTime?: boolean;
     bypassLinkShim?: boolean;
     stealthSearch?: boolean;
+    piiLeakShield?: boolean;
+    cleanShareLinks?: boolean;
+    antiFingerprint?: boolean;
   } = {
     readReceiptLabels,
     readReceiptPaths,

@@ -60,7 +60,7 @@ describe('antiFingerprintUtil', () => {
         if (pixels[i] !== clone[i]) {
           diffCount++;
           // Difference should only be 1 (LSB flip)
-          expect(Math.abs(pixels[i] - clone[i])).toBe(1);
+          expect(Math.abs(pixels[i]! - clone[i]!)).toBe(1);
         }
       }
       expect(diffCount).toBeGreaterThan(0);

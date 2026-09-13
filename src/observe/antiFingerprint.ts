@@ -57,9 +57,13 @@ export function installAntiFingerprintHook(
             // @ts-expect-error restore value
             delete nav.hardwareConcurrency;
           }
-        } catch {}
+        } catch {
+          // ignore restore errors
+        }
       });
-    } catch {}
+    } catch {
+      // ignore definition errors
+    }
 
     // deviceMemory
     try {
@@ -91,9 +95,13 @@ export function installAntiFingerprintHook(
             // @ts-expect-error restore value
             delete nav.deviceMemory;
           }
-        } catch {}
+        } catch {
+          // ignore restore errors
+        }
       });
-    } catch {}
+    } catch {
+      // ignore definition errors
+    }
   }
 
   // 2. Normalize screen.colorDepth & screen.pixelDepth
@@ -112,42 +120,50 @@ export function installAntiFingerprintHook(
         try {
           // @ts-expect-error restore
           delete scr.colorDepth;
-        } catch {}
+        } catch {
+          // ignore restore errors
+        }
       });
-    } catch {}
+    } catch {
+      // ignore definition errors
+    }
   }
 
   // 3. WebGL getParameter spoofing
   const winAny = win as unknown as {
-    WebGLRenderingContext?: { prototype?: { getParameter: (pname: number) => unknown } };
-    WebGL2RenderingContext?: { prototype?: { getParameter: (pname: number) => unknown } };
+    WebGLRenderingContext?: { prototype?: { getParameter: (pname: number, ...rest: unknown[]) => unknown } };
+    WebGL2RenderingContext?: { prototype?: { getParameter: (pname: number, ...rest: unknown[]) => unknown } };
   };
 
-  if (winAny.WebGLRenderingContext?.prototype?.getParameter) {
-    const origGetParam = winAny.WebGLRenderingContext.prototype.getParameter;
-    winAny.WebGLRenderingContext.prototype.getParameter = function (pname: number): unknown {
-      const originalValue = origGetParam.apply(this, arguments as unknown as [number]);
+  const webglCtx = winAny.WebGLRenderingContext;
+  if (webglCtx?.prototype?.getParameter) {
+    const proto = webglCtx.prototype;
+    const origGetParam = proto.getParameter;
+    proto.getParameter = function (pname: number, ...rest: unknown[]): unknown {
+      const originalValue = origGetParam.call(this, pname, ...rest);
       if (isActive()) {
         return spoofWebGLParameter(pname, originalValue);
       }
       return originalValue;
     };
     uninstalls.push(() => {
-      winAny.WebGLRenderingContext!.prototype.getParameter = origGetParam;
+      proto.getParameter = origGetParam;
     });
   }
 
-  if (winAny.WebGL2RenderingContext?.prototype?.getParameter) {
-    const origGetParam2 = winAny.WebGL2RenderingContext.prototype.getParameter;
-    winAny.WebGL2RenderingContext.prototype.getParameter = function (pname: number): unknown {
-      const originalValue = origGetParam2.apply(this, arguments as unknown as [number]);
+  const webgl2Ctx = winAny.WebGL2RenderingContext;
+  if (webgl2Ctx?.prototype?.getParameter) {
+    const proto2 = webgl2Ctx.prototype;
+    const origGetParam2 = proto2.getParameter;
+    proto2.getParameter = function (pname: number, ...rest: unknown[]): unknown {
+      const originalValue = origGetParam2.call(this, pname, ...rest);
       if (isActive()) {
         return spoofWebGLParameter(pname, originalValue);
       }
       return originalValue;
     };
     uninstalls.push(() => {
-      winAny.WebGL2RenderingContext!.prototype.getParameter = origGetParam2;
+      proto2.getParameter = origGetParam2;
     });
   }
 
@@ -160,22 +176,21 @@ export function installAntiFingerprintHook(
     };
   };
 
-  if (winCanvas.CanvasRenderingContext2D?.prototype?.getImageData) {
-    const origGetImageData = winCanvas.CanvasRenderingContext2D.prototype.getImageData;
-    winCanvas.CanvasRenderingContext2D.prototype.getImageData = function (
-      sx: number,
-      sy: number,
-      sw: number,
-      sh: number,
+  const canvasCtx = winCanvas.CanvasRenderingContext2D;
+  if (canvasCtx?.prototype?.getImageData) {
+    const canvasProto = canvasCtx.prototype;
+    const origGetImageData = canvasProto.getImageData;
+    canvasProto.getImageData = function (
+      ...args: [number, number, number, number]
     ): ImageData {
-      const imgData = origGetImageData.apply(this, arguments as unknown as [number, number, number, number]);
+      const imgData = origGetImageData.apply(this, args);
       if (isActive() && imgData && imgData.data) {
         applyCanvasNoise(imgData.data);
       }
       return imgData;
     };
     uninstalls.push(() => {
-      winCanvas.CanvasRenderingContext2D!.prototype.getImageData = origGetImageData;
+      canvasProto.getImageData = origGetImageData;
     });
   }
 

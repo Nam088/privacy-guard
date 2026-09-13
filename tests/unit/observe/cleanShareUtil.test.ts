@@ -3,7 +3,6 @@ import {
   cleanTextUrls,
   isTrackingParam,
   stripTrackingParams,
-  TRACKING_PARAMS,
 } from '@/observe/cleanShareUtil';
 
 describe('cleanShareUtil', () => {
