@@ -111,7 +111,12 @@ export function isDwellTelemetry(url: string, data?: unknown): boolean {
                 value.includes('viewable') ||
                 value.includes('vpvd') ||
                 value.includes('watch') ||
-                value.includes('timespent'))
+                value.includes('timespent') ||
+                value.includes('ods_web_batch') ||
+                value.includes('interaction_tracing') ||
+                value.includes('pointer_interaction') ||
+                value.includes('hover_dwell') ||
+                value.includes('mouse_movement'))
             ) {
               return true;
             }

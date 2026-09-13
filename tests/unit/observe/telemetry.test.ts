@@ -171,5 +171,35 @@ describe('telemetry dwell time scrambler', () => {
         JSON.stringify({ feed_vpvd: { duration_ms: 2500 } }),
       ),
     ).toBe(true);
+
+    // Live-detected Falco ODS Web Batch with comet_metrics_viewable_impression
+    expect(
+      isDwellTelemetry(
+        'https://web.facebook.com/ajax/bnzai?__a=1',
+        JSON.stringify({
+          route: 'falco:ods_web_batch',
+          data: {
+            actorId: '100094293981804',
+            e: JSON.stringify({
+              batch: {
+                '7173': {
+                  'entities.ff_js_web.comet_metrics_viewable_impression': {},
+                },
+              },
+            }),
+          },
+        }),
+      ),
+    ).toBe(true);
+
+    // Live-detected mouse and pointer interaction tracing
+    expect(
+      isDwellTelemetry(
+        'https://web.facebook.com/ajax/bz',
+        JSON.stringify({
+          events: [{ name: 'interaction_tracing', action: 'pointer_interaction' }],
+        }),
+      ),
+    ).toBe(true);
   });
 });
