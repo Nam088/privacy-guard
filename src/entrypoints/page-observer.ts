@@ -76,6 +76,12 @@ export interface ObserverConfig {
   readonly bypassLinkShim?: boolean;
   /** Whether search history tracking and recommendations skew should be suppressed. */
   readonly stealthSearch?: boolean;
+  /** Whether local PII leak shield should be enabled. */
+  readonly piiLeakShield?: boolean;
+  /** Whether clean share links (strip tracking params on copy) should be enabled. */
+  readonly cleanShareLinks?: boolean;
+  /** Whether anti-fingerprint shield (hardware & canvas/webgl spoofing) should be enabled. */
+  readonly antiFingerprint?: boolean;
 }
 
 export default defineUnlistedScript(() => {
@@ -110,6 +116,9 @@ export default defineUnlistedScript(() => {
   let readReceiptsActive = false;
   let linkShimBypassed = false;
   let stealthSearchActive = false;
+  let piiLeakShieldActive = false;
+  let cleanShareLinksActive = false;
+  let antiFingerprintActive = false;
 
   let isFacebookSite = false;
   let isInstagramSite = false;
@@ -162,6 +171,9 @@ export default defineUnlistedScript(() => {
       dwellTimeScrambled = Boolean(detail.scrambleDwellTime);
       linkShimBypassed = Boolean(detail.bypassLinkShim);
       stealthSearchActive = Boolean(detail.stealthSearch);
+      piiLeakShieldActive = Boolean(detail.piiLeakShield);
+      cleanShareLinksActive = Boolean(detail.cleanShareLinks);
+      antiFingerprintActive = Boolean(detail.antiFingerprint);
 
       const readReceiptLabels = detail.readReceiptLabels ?? [];
       const typingLabels = detail.typingLabels ?? [];
@@ -378,6 +390,9 @@ export default defineUnlistedScript(() => {
       isReelsActive,
       isWebRtcProtected: () => webRtcProtected,
       isDwellTimeScrambled: () => dwellTimeScrambled,
+      isPiiShieldActive: () => piiLeakShieldActive,
+      isCleanShareActive: () => cleanShareLinksActive,
+      isAntiFingerprintActive: () => antiFingerprintActive,
     },
   );
 });

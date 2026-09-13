@@ -60,5 +60,15 @@ export interface TranslationDictionary {
     readonly messenger: string;
     readonly instagram: string;
   };
+  readonly search: {
+    readonly placeholder: string;
+    readonly noResultsTitle: string;
+    readonly noResultsHint: string;
+    readonly clear: string;
+    readonly resultsCount: (count: number) => string;
+    readonly allPlatforms: string;
+    readonly shortcutHint: string;
+  };
   readonly features: Record<string, FeatureTranslation>;
 }
+

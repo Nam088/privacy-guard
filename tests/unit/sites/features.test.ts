@@ -62,6 +62,9 @@ describe.each(MODULES)('site module $id', (site) => {
         'scrambleDwellTime',
         'bypassLinkShim',
         'stealthSearch',
+        'piiLeakShield',
+        'cleanShareLinks',
+        'antiFingerprint',
       ],
       instagram: [
         'hideReadReceipts',
@@ -76,6 +79,9 @@ describe.each(MODULES)('site module $id', (site) => {
         'protectWebRtcIp',
         'scrambleDwellTime',
         'stealthSearch',
+        'piiLeakShield',
+        'cleanShareLinks',
+        'antiFingerprint',
       ],
     };
 

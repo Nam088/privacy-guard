@@ -55,6 +55,15 @@ export const en: TranslationDictionary = {
     messenger: 'Messenger',
     instagram: 'Instagram',
   },
+  search: {
+    placeholder: 'Search features (e.g. typing, ads, reels)...',
+    noResultsTitle: 'No features found',
+    noResultsHint: 'Try searching with different keywords or in Vietnamese (e.g. đang gõ, đã xem, quảng cáo)',
+    clear: 'Clear search',
+    resultsCount: (count: number) => `${count} ${count === 1 ? 'feature' : 'features'} found`,
+    allPlatforms: 'All Platforms',
+    shortcutHint: 'Press / to search, Esc to clear',
+  },
   features: {
     'facebook.hideReadReceipts': {
       label: 'Hide read receipts',
@@ -105,8 +114,8 @@ export const en: TranslationDictionary = {
       description: 'Listen to voice messages without notifying the sender',
     },
     'facebook.scrambleDwellTime': {
-      label: 'Scramble dwell time tracking',
-      description: 'Stop Meta measuring exact seconds spent looking at posts and videos',
+      label: 'Block cursor & dwell tracking',
+      description: 'Stop Meta tracking mouse cursor movements, hover heatmaps, and dwell seconds',
     },
     'facebook.bypassLinkShim': {
       label: 'Bypass Link Shim tracking',
@@ -115,6 +124,18 @@ export const en: TranslationDictionary = {
     'facebook.stealthSearch': {
       label: 'Stealth search (Zero-trace history)',
       description: 'Search profiles and pages without saving to recent search history or skewing recommendations',
+    },
+    'facebook.piiLeakShield': {
+      label: 'Local PII & secret leak shield',
+      description: 'Warn before pasting bank cards, citizen IDs, passwords, or API keys into chat',
+    },
+    'facebook.cleanShareLinks': {
+      label: 'Clean shared links (Anti-tracking)',
+      description: 'Automatically strip mibextid, rdid, and user tracking tokens when copying links',
+    },
+    'facebook.antiFingerprint': {
+      label: 'Anti-fingerprinting shield',
+      description: 'Spoof hardware telemetry, WebGL vendor, and canvas noise to prevent device fingerprinting',
     },
     'instagram.hideReadReceipts': {
       label: 'Hide read receipts',
@@ -157,12 +178,24 @@ export const en: TranslationDictionary = {
       description: 'Prevent local and public IP exposure during Instagram Direct calls',
     },
     'instagram.scrambleDwellTime': {
-      label: 'Scramble dwell time tracking',
-      description: 'Stop Meta measuring exact seconds spent looking at posts and videos',
+      label: 'Block cursor & dwell tracking',
+      description: 'Stop Meta tracking mouse movements, hover heatmaps, and dwell seconds',
     },
     'instagram.stealthSearch': {
       label: 'Stealth search (Zero-trace history)',
       description: 'Search accounts and tags without recording to recent search history or skewing explore suggestions',
+    },
+    'instagram.piiLeakShield': {
+      label: 'Local PII & secret leak shield',
+      description: 'Warn before pasting bank cards, citizen IDs, passwords, or API keys into chat',
+    },
+    'instagram.cleanShareLinks': {
+      label: 'Clean shared links (Anti-tracking)',
+      description: 'Automatically strip igsh, igshid, and UTM tokens when copying links',
+    },
+    'instagram.antiFingerprint': {
+      label: 'Anti-fingerprinting shield',
+      description: 'Spoof hardware telemetry, WebGL vendor, and canvas noise to prevent device fingerprinting',
     },
     'global.stripFbclid': {
       label: 'Strip fbclid from links',

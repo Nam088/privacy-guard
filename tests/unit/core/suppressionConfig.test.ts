@@ -81,6 +81,8 @@ describe('buildSuppressionConfig', () => {
         protectWebRtcIp: true,
         hideVoicePlayed: true,
         bypassLinkShim: true,
+        cleanShareLinks: true,
+        antiFingerprint: true,
       });
     }
   });
@@ -149,6 +151,8 @@ describe('buildSuppressionConfig', () => {
         'instagram.hideOnlineStatus': false,
         'instagram.hideSponsoredPosts': false,
         'instagram.protectWebRtcIp': false,
+        'instagram.cleanShareLinks': false,
+        'instagram.antiFingerprint': false,
         'facebook.hideReadReceipts': true,
         'facebook.hideTyping': true,
         'facebook.hideStoryViews': true,
@@ -393,7 +397,86 @@ describe('buildSuppressionConfig', () => {
     const defaultFbConfig = buildSuppressionConfig('https://www.facebook.com/', DEFAULT_SETTINGS);
     expect(defaultFbConfig.stealthSearch).toBeUndefined();
   });
+
+  it('grants piiLeakShield when enabled for facebook or instagram', () => {
+    const withPrivacy: Settings = {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.piiLeakShield': true,
+        'instagram.piiLeakShield': true,
+      },
+    };
+
+    const fbConfig = buildSuppressionConfig('https://www.facebook.com/messages/t/123', withPrivacy);
+    expect(fbConfig.piiLeakShield).toBe(true);
+
+    const igConfig = buildSuppressionConfig('https://www.instagram.com/direct/t/123', withPrivacy);
+    expect(igConfig.piiLeakShield).toBe(true);
+
+    const offConfig = buildSuppressionConfig('https://www.facebook.com/', {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.piiLeakShield': false,
+      },
+    });
+    expect(offConfig.piiLeakShield).toBeUndefined();
+  });
+
+  it('grants cleanShareLinks when enabled for facebook or instagram', () => {
+    const withCleanShare: Settings = {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.cleanShareLinks': true,
+        'instagram.cleanShareLinks': true,
+      },
+    };
+
+    const fbConfig = buildSuppressionConfig('https://www.facebook.com/', withCleanShare);
+    expect(fbConfig.cleanShareLinks).toBe(true);
+
+    const igConfig = buildSuppressionConfig('https://www.instagram.com/', withCleanShare);
+    expect(igConfig.cleanShareLinks).toBe(true);
+
+    const offConfig = buildSuppressionConfig('https://www.facebook.com/', {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.cleanShareLinks': false,
+      },
+    });
+    expect(offConfig.cleanShareLinks).toBeUndefined();
+  });
+
+  it('grants antiFingerprint when enabled for facebook or instagram', () => {
+    const withFp: Settings = {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.antiFingerprint': true,
+        'instagram.antiFingerprint': true,
+      },
+    };
+
+    const fbConfig = buildSuppressionConfig('https://www.facebook.com/', withFp);
+    expect(fbConfig.antiFingerprint).toBe(true);
+
+    const igConfig = buildSuppressionConfig('https://www.instagram.com/', withFp);
+    expect(igConfig.antiFingerprint).toBe(true);
+
+    const offConfig = buildSuppressionConfig('https://www.facebook.com/', {
+      ...DEFAULT_SETTINGS,
+      features: {
+        ...DEFAULT_SETTINGS.features,
+        'facebook.antiFingerprint': false,
+      },
+    });
+    expect(offConfig.antiFingerprint).toBeUndefined();
+  });
 });
+
 
 
 

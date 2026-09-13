@@ -9,6 +9,9 @@ import { installFeedDeclutterHook } from './feedDeclutter';
 import { installWebRtcShield } from './webrtc';
 import { installTelemetryScrambler } from './telemetry';
 import { installReadReplayBridge } from './replayBuffer';
+import { installPiiShieldHook } from './piiShield';
+import { installCleanShareHook } from './cleanShare';
+import { installAntiFingerprintHook } from './antiFingerprint';
 
 type ObservableScope = Parameters<typeof observeWebSocket>[0] &
   Parameters<typeof observeWorkers>[0] &
@@ -34,6 +37,9 @@ export interface ObserverOptions {
   readonly isReelsActive?: () => boolean;
   readonly isWebRtcProtected?: () => boolean;
   readonly isDwellTimeScrambled?: () => boolean;
+  readonly isPiiShieldActive?: () => boolean;
+  readonly isCleanShareActive?: () => boolean;
+  readonly isAntiFingerprintActive?: () => boolean;
 }
 
 export function installObservers(
@@ -102,12 +108,27 @@ export function installObservers(
   }
 
   let undoReplay = () => {};
+  let undoPiiShield = () => {};
+  let undoCleanShare = () => {};
+  let undoAntiFingerprint = () => {};
   const candidateWin = scope as unknown as Window;
   if (candidateWin && typeof candidateWin.addEventListener === 'function') {
     undoReplay = installReadReplayBridge(candidateWin);
+    if (options.isPiiShieldActive) {
+      undoPiiShield = installPiiShieldHook(candidateWin, options.isPiiShieldActive);
+    }
+    if (options.isCleanShareActive) {
+      undoCleanShare = installCleanShareHook(candidateWin, options.isCleanShareActive);
+    }
+    if (options.isAntiFingerprintActive) {
+      undoAntiFingerprint = installAntiFingerprintHook(candidateWin, options.isAntiFingerprintActive);
+    }
   }
 
   return () => {
+    undoAntiFingerprint();
+    undoCleanShare();
+    undoPiiShield();
     undoReplay();
     undoTelemetry();
     undoWebRtc();

@@ -9,7 +9,7 @@ export const vi: TranslationDictionary = {
     openSiteHint:
       'Mở Facebook, Messenger hoặc Instagram để điều khiển cho trang đó. Các cài đặt bên dưới áp dụng cho mọi trang web.',
     footerNotice: 'Chỉ hoạt động trên phiên của bạn. Privacy Guard không gửi dữ liệu đi bất cứ đâu.',
-    trustCaption: '100% trên máy bạn • Không thu thập dữ liệu',
+    trustCaption: 'Không thu thập dữ liệu',
     socialAssistant: 'Trợ lý bảo vệ mạng xã hội',
     webAssistant: 'Trợ lý bảo vệ web',
     activeProtectionSummary: (siteName: string) => `Đang bảo vệ riêng tư & lọc sạch trên ${siteName}.`,
@@ -54,6 +54,15 @@ export const vi: TranslationDictionary = {
     facebook: 'Facebook',
     messenger: 'Messenger',
     instagram: 'Instagram',
+  },
+  search: {
+    placeholder: 'Tìm kiếm tính năng (vd: đang gõ, quảng cáo, reels)...',
+    noResultsTitle: 'Không tìm thấy tính năng',
+    noResultsHint: 'Thử tìm bằng từ khoá khác hoặc tiếng Anh (vd: typing, ads, reels, story)',
+    clear: 'Xoá tìm kiếm',
+    resultsCount: (count: number) => `Tìm thấy ${count} tính năng`,
+    allPlatforms: 'Tất cả nền tảng',
+    shortcutHint: 'Nhấn / để tìm, Esc để xoá',
   },
   features: {
     'facebook.hideReadReceipts': {
@@ -105,8 +114,8 @@ export const vi: TranslationDictionary = {
       description: 'Nghe tin nhắn thoại mà không để đối phương biết bạn đã nghe',
     },
     'facebook.scrambleDwellTime': {
-      label: 'Chặn đo thời gian dừng xem (Dwell Time)',
-      description: 'Chặn Meta đo thời gian bạn dừng lại đọc từng bài viết và video',
+      label: 'Chặn theo dõi chuột & thời gian xem',
+      description: 'Chặn Meta thu thập cử chỉ chuột, bản đồ nhiệt hover và số giây dừng xem',
     },
     'facebook.bypassLinkShim': {
       label: 'Bỏ qua chuyển hướng theo dõi (Link Shim)',
@@ -115,6 +124,18 @@ export const vi: TranslationDictionary = {
     'facebook.stealthSearch': {
       label: 'Tìm kiếm vô danh (Không lưu lịch sử)',
       description: 'Tìm kiếm trang và trang cá nhân mà không lưu vào lịch sử tìm kiếm gần đây hoặc làm lệch gợi ý',
+    },
+    'facebook.piiLeakShield': {
+      label: 'Chống rò rỉ dữ liệu nhạy cảm (PII Shield)',
+      description: 'Cảnh báo và hỗ trợ che giấu khi dán thẻ ngân hàng, CCCD, mật khẩu hoặc API key vào chat',
+    },
+    'facebook.cleanShareLinks': {
+      label: 'Làm sạch link chia sẻ (Chống tracking)',
+      description: 'Tự động gỡ bỏ mibextid, rdid và mã định danh theo dõi khi sao chép liên kết',
+    },
+    'facebook.antiFingerprint': {
+      label: 'Chống nhận diện dấu vân tay thiết bị (Anti-Fingerprinting)',
+      description: 'Che giấu cấu hình phần cứng CPU/RAM, WebGL và thêm vi nhiễu Canvas chống định danh thiết bị',
     },
     'instagram.hideReadReceipts': {
       label: 'Chặn đã xem tin nhắn',
@@ -157,12 +178,24 @@ export const vi: TranslationDictionary = {
       description: 'Ngăn chặn lộ địa chỉ IP thật của bạn trong các cuộc gọi Instagram Direct',
     },
     'instagram.scrambleDwellTime': {
-      label: 'Chặn đo thời gian dừng xem (Dwell Time)',
-      description: 'Chặn Instagram đo thời gian bạn dừng lại đọc từng bài viết và video',
+      label: 'Chặn theo dõi chuột & thời gian xem',
+      description: 'Chặn Instagram thu thập cử chỉ chuột, bản đồ nhiệt hover và số giây dừng xem',
     },
     'instagram.stealthSearch': {
       label: 'Tìm kiếm vô danh (Không lưu lịch sử)',
       description: 'Tìm kiếm tài khoản và thẻ mà không ghi vào lịch sử tìm kiếm gần đây hoặc làm lệch gợi ý khám phá',
+    },
+    'instagram.piiLeakShield': {
+      label: 'Chống rò rỉ dữ liệu nhạy cảm (PII Shield)',
+      description: 'Cảnh báo và hỗ trợ che giấu khi dán thẻ ngân hàng, CCCD, mật khẩu hoặc API key vào chat',
+    },
+    'instagram.cleanShareLinks': {
+      label: 'Làm sạch link chia sẻ (Chống tracking)',
+      description: 'Tự động gỡ bỏ igsh, igshid và mã UTM theo dõi khi sao chép liên kết',
+    },
+    'instagram.antiFingerprint': {
+      label: 'Chống nhận diện dấu vân tay thiết bị (Anti-Fingerprinting)',
+      description: 'Che giấu cấu hình phần cứng CPU/RAM, WebGL và thêm vi nhiễu Canvas chống định danh thiết bị',
     },
     'global.stripFbclid': {
       label: 'Xóa tham số theo dõi URL',

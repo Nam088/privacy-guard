@@ -11,8 +11,11 @@ import {
   LockCheckIcon,
   MicOffIcon,
   PauseReloadIcon,
+  PiiShieldIcon,
   RadarIcon,
   SearchSlashIcon,
+  ShareCleanIcon,
+  FingerprintShieldIcon,
   ShieldNetworkIcon,
   SparklesSlashIcon,
   VideoOffIcon,
@@ -47,7 +50,7 @@ function renderBadge(icon: ComponentChildren, variant: BadgeVariant): ComponentC
 
   return (
     <div
-      class={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${variantStyles[variant]}`}
+      class={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${variantStyles[variant]}`}
     >
       {icon}
     </div>
@@ -118,6 +121,18 @@ export function getFeatureIcon(key: string): ComponentChildren {
 
     case 'global.stripFbclid':
       return renderBadge(<LinkSlashIcon size={17} />, 'sky');
+
+    case 'facebook.piiLeakShield':
+    case 'instagram.piiLeakShield':
+      return renderBadge(<PiiShieldIcon size={17} />, 'rose');
+
+    case 'facebook.cleanShareLinks':
+    case 'instagram.cleanShareLinks':
+      return renderBadge(<ShareCleanIcon size={17} />, 'teal');
+
+    case 'facebook.antiFingerprint':
+    case 'instagram.antiFingerprint':
+      return renderBadge(<FingerprintShieldIcon size={17} />, 'indigo');
 
     default:
       return null;

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { installObservers } from '@/observe/install';
 import type { ObservedEvent } from '@/observe/types';
 
@@ -82,5 +82,39 @@ describe('installObservers', () => {
     expect(window.document.getElementById('fb-security-declutter-style')).not.toBeNull();
     uninstall();
     expect(window.document.getElementById('fb-security-declutter-style')).toBeNull();
+  });
+
+  it('installs and uninstalls clean share hook when isCleanShareActive is provided', () => {
+    const originalWriteText = vi.fn();
+    const fakeNav = { clipboard: { writeText: originalWriteText } };
+    const addEventListenerSpy = vi.fn();
+    const removeEventListenerSpy = vi.fn();
+    const scope = Object.assign(makeScope(), {
+      addEventListener: addEventListenerSpy,
+      removeEventListener: removeEventListenerSpy,
+      navigator: fakeNav,
+    }) as unknown as Parameters<typeof installObservers>[0];
+
+    const uninstall = installObservers(scope, () => {}, {
+      isCleanShareActive: () => true,
+    });
+    expect(addEventListenerSpy).toHaveBeenCalledWith('copy', expect.any(Function), true);
+    uninstall();
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('copy', expect.any(Function), true);
+  });
+
+  it('installs and uninstalls anti-fingerprint hook when isAntiFingerprintActive is provided', () => {
+    const fakeNav = { hardwareConcurrency: 16, deviceMemory: 32 };
+    const fakeWin = Object.assign(makeScope(), {
+      navigator: fakeNav,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }) as unknown as Parameters<typeof installObservers>[0];
+
+    const uninstall = installObservers(fakeWin, () => {}, {
+      isAntiFingerprintActive: () => true,
+    });
+    expect(fakeNav.hardwareConcurrency).toBe(8);
+    uninstall();
   });
 });

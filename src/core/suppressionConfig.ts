@@ -34,6 +34,9 @@ export interface SuppressionConfig {
   readonly scrambleDwellTime?: boolean;
   readonly bypassLinkShim?: boolean;
   readonly stealthSearch?: boolean;
+  readonly piiLeakShield?: boolean;
+  readonly cleanShareLinks?: boolean;
+  readonly antiFingerprint?: boolean;
 }
 
 const NOTHING: SuppressionConfig = {
@@ -74,6 +77,9 @@ export function buildSuppressionConfig(
   const isDwellTimeScrambledOn = isFeatureOn(settings, featureKey(site.id, 'scrambleDwellTime'));
   const isLinkShimBypassedOn = isFeatureOn(settings, featureKey(site.id, 'bypassLinkShim'));
   const isStealthSearchOn = isFeatureOn(settings, featureKey(site.id, 'stealthSearch'));
+  const isPiiLeakShieldOn = isFeatureOn(settings, featureKey(site.id, 'piiLeakShield'));
+  const isCleanShareOn = isFeatureOn(settings, featureKey(site.id, 'cleanShareLinks'));
+  const isAntiFingerprintOn = isFeatureOn(settings, featureKey(site.id, 'antiFingerprint'));
 
   let readReceiptLabels: readonly string[] = [];
   let readReceiptPaths: readonly string[] = [];
@@ -183,6 +189,15 @@ export function buildSuppressionConfig(
   }
   if (isStealthSearchOn) {
     result.stealthSearch = true;
+  }
+  if (isPiiLeakShieldOn) {
+    result.piiLeakShield = true;
+  }
+  if (isCleanShareOn) {
+    result.cleanShareLinks = true;
+  }
+  if (isAntiFingerprintOn) {
+    result.antiFingerprint = true;
   }
 
   return result;
