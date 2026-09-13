@@ -10,6 +10,9 @@
             "removeParams": [
               "fbclid",
               "igshid",
+              "igsh",
+              "mibextid",
+              "rdid",
               "gclid",
               "utm_source",
               "utm_medium",
@@ -42,6 +45,9 @@
             "removeParams": [
               "fbclid",
               "igshid",
+              "igsh",
+              "mibextid",
+              "rdid",
               "gclid",
               "utm_source",
               "utm_medium",
@@ -74,6 +80,9 @@
             "removeParams": [
               "fbclid",
               "igshid",
+              "igsh",
+              "mibextid",
+              "rdid",
               "gclid",
               "utm_source",
               "utm_medium",
@@ -106,6 +115,9 @@
             "removeParams": [
               "fbclid",
               "igshid",
+              "igsh",
+              "mibextid",
+              "rdid",
               "gclid",
               "utm_source",
               "utm_medium",
@@ -138,6 +150,9 @@
             "removeParams": [
               "fbclid",
               "igshid",
+              "igsh",
+              "mibextid",
+              "rdid",
               "gclid",
               "utm_source",
               "utm_medium",
@@ -155,6 +170,76 @@
     },
     "condition": {
       "urlFilter": "si=",
+      "resourceTypes": ["main_frame", "sub_frame"],
+      "excludedRequestDomains": ["facebook.com", "messenger.com", "instagram.com"]
+    }
+  },
+  {
+    "id": 6,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "transform": {
+          "queryTransform": {
+            "removeParams": [
+              "fbclid",
+              "igshid",
+              "igsh",
+              "mibextid",
+              "rdid",
+              "gclid",
+              "utm_source",
+              "utm_medium",
+              "utm_campaign",
+              "utm_term",
+              "utm_content",
+              "si",
+              "mc_eid",
+              "dclid",
+              "msclkid"
+            ]
+          }
+        }
+      }
+    },
+    "condition": {
+      "urlFilter": "mibextid=",
+      "resourceTypes": ["main_frame", "sub_frame"],
+      "excludedRequestDomains": ["facebook.com", "messenger.com", "instagram.com"]
+    }
+  },
+  {
+    "id": 7,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "transform": {
+          "queryTransform": {
+            "removeParams": [
+              "fbclid",
+              "igshid",
+              "igsh",
+              "mibextid",
+              "rdid",
+              "gclid",
+              "utm_source",
+              "utm_medium",
+              "utm_campaign",
+              "utm_term",
+              "utm_content",
+              "si",
+              "mc_eid",
+              "dclid",
+              "msclkid"
+            ]
+          }
+        }
+      }
+    },
+    "condition": {
+      "urlFilter": "igsh=",
       "resourceTypes": ["main_frame", "sub_frame"],
       "excludedRequestDomains": ["facebook.com", "messenger.com", "instagram.com"]
     }
