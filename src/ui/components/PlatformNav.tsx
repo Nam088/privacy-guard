@@ -87,7 +87,7 @@ export function PlatformNav({
               type="button"
               aria-label={item.label}
               onClick={() => onSelectTab(item.id)}
-              class={`group relative w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-all duration-150 cursor-pointer text-left outline-none focus:outline-none border-0 ${
+              class={`group relative w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-[background-color,color,transform] duration-150 active:scale-[0.985] cursor-pointer text-left outline-none focus:outline-none border-0 contain-[layout_style] ${
                 isSelected
                   ? item.activeCard
                   : 'text-text-muted hover:text-text hover:bg-surface-muted/60 font-medium'

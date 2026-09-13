@@ -12,15 +12,18 @@ export function resolveActiveSite(
   return findSiteForUrl(tabs[0]?.url);
 }
 
-export async function getActiveSite(): Promise<SiteModule | null> {
+export async function getActiveSite(timeoutMs: number = 300): Promise<SiteModule | null> {
   try {
-    const tabs = await browser.tabs.query({
+    const queryPromise = browser.tabs.query({
       active: true,
       currentWindow: true,
     });
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('tabs.query timeout')), timeoutMs),
+    );
+    const tabs = (await Promise.race([queryPromise, timeoutPromise])) as TabLike[];
     return resolveActiveSite(tabs);
   } catch (error) {
-    console.warn('[privacy-guard] could not read the active tab', error);
     return null;
   }
 }

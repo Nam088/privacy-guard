@@ -18,7 +18,7 @@ export function FeatureSection({
   const showCount = activeCount !== undefined && totalCount !== undefined;
 
   return (
-    <div class="space-y-1.5 select-none">
+    <div class="space-y-1.5 select-none contain-[content]">
       <div class="px-1 flex items-center justify-between text-text-muted">
         <span class="text-[11px] font-semibold tracking-wider uppercase text-text/80">
           {title}

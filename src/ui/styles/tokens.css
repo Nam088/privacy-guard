@@ -69,7 +69,6 @@ html,
 body {
   margin: 0;
   padding: 0;
-  border-radius: 16px;
   overflow: hidden;
   background: var(--pg-surface);
   color: var(--pg-text);
@@ -132,6 +131,21 @@ input:active,
 .is-loading *::after {
   transition: none !important;
   animation-duration: 0s !important;
+}
+
+/* GPU hardware compositing and smooth performance */
+.contain-content {
+  contain: content;
+}
+
+.contain-card {
+  contain: layout style;
+}
+
+.gpu-layer {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 

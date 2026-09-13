@@ -11,3 +11,5 @@ test-results/
 
 scratch/
 .dev-profile/
+/scratch
+fbchat-v2/

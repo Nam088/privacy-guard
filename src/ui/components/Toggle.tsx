@@ -20,8 +20,8 @@ export function Toggle({
   onChange,
 }: ToggleProps) {
   const containerClass = disabled
-    ? 'group relative flex items-center gap-3.5 px-3.5 py-2.5 cursor-not-allowed opacity-40 select-none'
-    : 'group relative flex items-center gap-3.5 px-3.5 py-2.5 cursor-pointer hover:bg-surface-muted/50 active:bg-surface-muted/80 transition-colors duration-150 select-none';
+    ? 'group relative flex items-center gap-3.5 px-3.5 py-2.5 cursor-not-allowed opacity-40 select-none contain-[layout_style]'
+    : 'group relative flex items-center gap-3.5 px-3.5 py-2.5 cursor-pointer hover:bg-surface-muted/50 active:bg-surface-muted/80 transition-colors duration-150 select-none contain-[layout_style]';
 
   return (
     <label class={containerClass}>
@@ -61,7 +61,7 @@ export function Toggle({
             onChange(event.currentTarget.checked);
           }}
         />
-        <span class="relative block h-5 w-9 rounded-full bg-slate-300 dark:bg-slate-700 transition-colors duration-200 peer-checked:bg-emerald-500 dark:peer-checked:bg-emerald-500 after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-xs after:transition-transform after:duration-200 after:content-[''] peer-checked:after:translate-x-4 outline-none select-none" />
+        <span class="relative block h-5 w-9 rounded-full bg-slate-300 dark:bg-slate-700 transition-colors duration-200 peer-checked:bg-emerald-500 dark:peer-checked:bg-emerald-500 after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-xs after:transition-transform after:duration-200 after:ease-out after:will-change-transform after:translate-z-0 after:content-[''] peer-checked:after:translate-x-4 outline-none select-none" />
       </div>
     </label>
   );

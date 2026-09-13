@@ -2,7 +2,41 @@ import { signal } from '@preact/signals';
 import { DEFAULT_SETTINGS, type Settings } from './schema';
 import { readSettings, settingsItem, writeSettings } from './storage';
 
-export const settings = signal<Settings>(DEFAULT_SETTINGS);
+function loadCachedSettings(): Settings {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const cached = localStorage.getItem('pg_settings_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object' && typeof parsed.masterEnabled === 'boolean') {
+          return {
+            ...DEFAULT_SETTINGS,
+            ...parsed,
+            features: {
+              ...DEFAULT_SETTINGS.features,
+              ...(parsed.features || {}),
+            },
+          };
+        }
+      }
+    }
+  } catch {
+    // Ignore localStorage failures
+  }
+  return DEFAULT_SETTINGS;
+}
+
+function syncLocalStorageCache(next: Settings): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('pg_settings_cache', JSON.stringify(next));
+    }
+  } catch {
+    // Ignore localStorage quota errors
+  }
+}
+
+export const settings = signal<Settings>(loadCachedSettings());
 export const isReady = signal(false);
 
 let unwatch: (() => void) | undefined;
@@ -35,12 +69,14 @@ export async function initSettingsStore(): Promise<void> {
     unwatch = settingsItem.watch((next) => {
       if (next) {
         settings.value = next;
+        syncLocalStorageCache(next);
       }
     });
 
     const loaded = await readSettings();
     if (revision === startedAt) {
       settings.value = loaded;
+      syncLocalStorageCache(loaded);
     }
 
     isReady.value = true;
@@ -79,10 +115,12 @@ async function commit(next: Settings): Promise<void> {
   const previous = settings.value;
   revision += 1;
   settings.value = next;
+  syncLocalStorageCache(next);
   try {
     await writeSettings(next);
   } catch (error) {
     settings.value = previous;
+    syncLocalStorageCache(previous);
     throw error;
   }
 }

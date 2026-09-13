@@ -26,7 +26,7 @@ export function QuickPresets({
       <button
         type="button"
         onClick={onApplyStealth}
-        class="flex items-center gap-3 p-2.5 rounded-xl border border-border bg-surface-card hover:bg-surface-muted/60 hover:border-indigo-500/30 transition-all duration-150 text-left shadow-2xs cursor-pointer group active:scale-[0.99] outline-none focus:outline-none"
+        class="flex items-center gap-3 p-2.5 rounded-xl border border-border bg-surface-card hover:bg-surface-muted/60 hover:border-indigo-500/30 transition-[background-color,border-color,transform] duration-150 text-left shadow-2xs cursor-pointer group active:scale-[0.975] outline-none focus:outline-none contain-[layout_style]"
         title={stealthTooltip}
       >
         <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 ring-1 ring-indigo-500/20 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105">
@@ -45,7 +45,7 @@ export function QuickPresets({
       <button
         type="button"
         onClick={onApplyClean}
-        class="flex items-center gap-3 p-2.5 rounded-xl border border-border bg-surface-card hover:bg-surface-muted/60 hover:border-amber-500/30 transition-all duration-150 text-left shadow-2xs cursor-pointer group active:scale-[0.99] outline-none focus:outline-none"
+        class="flex items-center gap-3 p-2.5 rounded-xl border border-border bg-surface-card hover:bg-surface-muted/60 hover:border-amber-500/30 transition-[background-color,border-color,transform] duration-150 text-left shadow-2xs cursor-pointer group active:scale-[0.975] outline-none focus:outline-none contain-[layout_style]"
         title={cleanTooltip}
       >
         <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 ring-1 ring-amber-500/20 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105">

@@ -1,29 +1,29 @@
 import { render } from 'preact';
 import '@/ui/styles/tokens.css';
-import { getActiveSite } from '@/core/activeSite';
-import { applyTheme, initSettingsStore, settings } from '@/core/settings/store';
+import { applyTheme } from '@/core/settings/store';
 import { Popup } from './Popup';
 
-async function bootstrap() {
+function bootstrap() {
   const root = document.getElementById('app');
   if (!root) return;
 
-  // Pre-load settings from storage and detect active tab in parallel before mounting.
-  // This guarantees the first visual paint immediately renders the persisted user configuration,
-  // preventing toggle switch animation lag, layout shifts, or flash of default states.
+  // Restore saved theme immediately from localStorage on frame 0 to prevent any theme flash
   try {
-    const [, activeSite] = await Promise.all([
-      initSettingsStore(),
-      getActiveSite().catch(() => null),
-    ]);
-    applyTheme(settings.value.theme);
-    render(<Popup initialSite={activeSite} />, root);
-  } catch (error) {
-    console.error('Failed to pre-load settings:', error);
-    render(<Popup />, root);
+    const cachedTheme = localStorage.getItem('pg_theme');
+    if (cachedTheme === 'light' || cachedTheme === 'dark') {
+      applyTheme(cachedTheme);
+    }
+  } catch {
+    // Ignore localStorage access failures
   }
+
+  // Clear any existing nodes to ensure pristine single-tree mount
+  root.replaceChildren();
+
+  // Instant zero-latency render on frame 0:
+  // Does not block initial paint on browser IPC or tabs.query.
+  // Settings store and active site detection run in the background.
+  render(<Popup />, root);
 }
 
-void bootstrap();
-
-
+bootstrap();

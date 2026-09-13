@@ -52,7 +52,7 @@ export function MasterSwitchCard({
           />
           <label
             for="master-switch"
-            class="relative block h-[22px] w-[38px] rounded-full bg-slate-300 dark:bg-slate-700 cursor-pointer transition-colors duration-200 peer-checked:bg-emerald-500 dark:peer-checked:bg-emerald-500 shadow-inner after:absolute after:top-[2px] after:left-[2px] after:h-[18px] after:w-[18px] after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:duration-200 after:content-[''] peer-checked:after:translate-x-4 outline-none select-none"
+            class="relative block h-[22px] w-[38px] rounded-full bg-slate-300 dark:bg-slate-700 cursor-pointer transition-colors duration-200 peer-checked:bg-emerald-500 dark:peer-checked:bg-emerald-500 shadow-inner after:absolute after:top-[2px] after:left-[2px] after:h-[18px] after:w-[18px] after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:duration-200 after:ease-out after:will-change-transform after:translate-z-0 after:content-[''] peer-checked:after:translate-x-4 outline-none select-none active:scale-[0.96] transition-transform"
           />
         </div>
       </div>

@@ -42,7 +42,7 @@ export function SegmentedControl<T extends string>({
             title={opt.title ?? opt.label}
             aria-pressed={isSelected}
             onClick={() => onChange(opt.value)}
-            class={`relative flex items-center justify-center gap-1.5 rounded-md font-medium transition-all duration-150 cursor-pointer outline-none focus:outline-none ${
+            class={`relative flex items-center justify-center gap-1.5 rounded-md font-medium transition-[background-color,color,transform] duration-150 active:scale-[0.98] cursor-pointer outline-none focus:outline-none ${
               isSm ? 'px-2 py-0.5' : 'px-2.5 py-1'
             } ${
               isSelected
