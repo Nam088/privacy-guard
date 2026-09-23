@@ -182,3 +182,31 @@ export function isOutboundMessagePayload(data: unknown): boolean {
 
   return false;
 }
+
+export const TYPING_STOP_STATES = ['idle', 'stop', 'paused', 'inactive', 'clear', 'gone'] as const;
+
+/**
+ * Checks whether an intercepted DGW or Worker payload represents an idle or stop typing state
+ * (e.g. is_typing: 0, state: 0, or state: "IDLE").
+ */
+export function isTypingStopPayload(data: unknown): boolean {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+  const state = extractStateValue(data);
+  if (state === 0 || state === 2 || state === '0' || state === '2') {
+    return true;
+  }
+  if (typeof state === 'string') {
+    const lowered = state.toLowerCase();
+    if (TYPING_STOP_STATES.some((stop) => lowered.includes(stop))) {
+      return true;
+    }
+  }
+  const rec = data as Record<string, unknown>;
+  if (rec.is_typing === 0 || rec.is_typing === '0') {
+    return true;
+  }
+  return false;
+}
+

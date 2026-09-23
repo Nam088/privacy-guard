@@ -48,11 +48,11 @@ describe('InstagramReadReceiptRule', () => {
     });
   });
 
-  it('drops DGW task label 72 and 235 frames on Instagram Web', () => {
+  it('passes DGW task label 72 and 235 frames on Instagram Web', () => {
     const raw = buildFrame([{ label: '72' }, { label: '235' }]);
     const context = new LazyInterceptContext('wss://gateway.instagram.com/ws/realtime', raw);
 
-    expect(rule.evaluate(context)?.action).toBe('drop');
+    expect(rule.evaluate(context)).toBeNull();
   });
 
   it('reports mixed when DGW frame contains both read receipt and innocent tasks', () => {

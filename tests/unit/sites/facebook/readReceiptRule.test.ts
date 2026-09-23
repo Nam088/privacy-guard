@@ -25,7 +25,7 @@ function buildFrame(tasks: { label: string }[]): Uint8Array {
 }
 
 describe('FacebookReadReceiptRule', () => {
-  const rule = new FacebookReadReceiptRule(['21', '72', '235']);
+  const rule = new FacebookReadReceiptRule(['21']);
 
   it('targets /ws/lightspeed and /ws/realtime', () => {
     expect(rule.targetPaths).toContain('/ws/lightspeed');
@@ -44,18 +44,34 @@ describe('FacebookReadReceiptRule', () => {
     });
   });
 
-  it('drops doubled 72 frames observed on live Messenger', () => {
+  it('passes task 72 (in-thread activity banners) to prevent queue jamming', () => {
     const raw = buildFrame([{ label: '72' }, { label: '72' }]);
     const context = new LazyInterceptContext('wss://gateway.messenger.com/ws/lightspeed', raw);
 
-    expect(rule.evaluate(context)?.action).toBe('drop');
+    expect(rule.evaluate(context)).toBeNull();
   });
 
-  it('drops doubled 235 frames observed on live Messenger', () => {
+  it('passes task 235 (ctm ad context) to prevent queue jamming', () => {
     const raw = buildFrame([{ label: '235' }, { label: '235' }]);
     const context = new LazyInterceptContext('wss://gateway.messenger.com/ws/lightspeed', raw);
 
-    expect(rule.evaluate(context)?.action).toBe('drop');
+    expect(rule.evaluate(context)).toBeNull();
+  });
+
+  it('default rule instance passes task 72 and task 235', () => {
+    const defaultRule = new FacebookReadReceiptRule();
+    const raw72 = buildFrame([{ label: '72' }]);
+    const raw235 = buildFrame([{ label: '235' }]);
+    expect(
+      defaultRule.evaluate(
+        new LazyInterceptContext('wss://gateway.messenger.com/ws/lightspeed', raw72),
+      ),
+    ).toBeNull();
+    expect(
+      defaultRule.evaluate(
+        new LazyInterceptContext('wss://gateway.messenger.com/ws/lightspeed', raw235),
+      ),
+    ).toBeNull();
   });
 
   it('drops /ws/realtime text frames carrying last_read_watermark_ts', () => {

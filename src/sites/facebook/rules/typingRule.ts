@@ -16,6 +16,7 @@ import {
   collectWorkerActions,
   extractStateValue,
   isOutboundMessagePayload,
+  isTypingStopPayload,
 } from '@/sites/workerUtil';
 
 /**
@@ -106,13 +107,21 @@ export class FacebookTypingRule implements SuppressionRule, HttpSuppressionRule 
       return null;
     }
 
-    const { envelope, labels } = context.getDgwTasks();
+    const { envelope, labels, tasks } = context.getDgwTasks();
     if (envelope === 'unknown' || labels.length === 0) {
       return null;
     }
 
     const signal = labels.filter((label) => this.signalLabels.includes(label));
     if (signal.length === 0) {
+      return null;
+    }
+
+    // Never drop typing stop/idle signals (e.g. is_typing: 0) on DGW frames
+    const hasStopSignal = tasks.some(
+      (task) => this.signalLabels.includes(task.label) && isTypingStopPayload(task.payload),
+    );
+    if (hasStopSignal) {
       return null;
     }
 

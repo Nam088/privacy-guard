@@ -367,7 +367,7 @@ describe('buildSuppressionConfig', () => {
     expect(config.hideSuggestedPosts).toBe(true);
     expect(config.scrambleDwellTime).toBe(true);
     // In 2026, Instagram Direct has its own unified DGW labels for LightSpeed
-    expect(config.readReceiptLabels).toEqual(['21', '72', '235']);
+    expect(config.readReceiptLabels).toEqual(['21']);
     expect(config.typingLabels).toEqual(['3']);
     expect(config.readReceiptPaths).toContain('/ws/realtime');
     expect(config.typingPaths).toContain('/ws/realtime');

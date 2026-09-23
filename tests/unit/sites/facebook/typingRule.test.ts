@@ -95,6 +95,26 @@ describe('FacebookTypingRule', () => {
     });
   });
 
+  it('passes DGW frame carrying typing label 3 when is_typing is 0 (stop signal)', () => {
+    const outer = JSON.stringify({
+      app_id: '1',
+      payload: JSON.stringify({
+        label: 3,
+        payload: JSON.stringify({ thread_key: 12345, is_typing: 0 }),
+        version: '1.0',
+      }),
+      request_id: 8,
+      type: 4,
+    });
+    const body = new TextEncoder().encode(outer);
+    const out = new Uint8Array(HEADER.length + body.length);
+    out.set(HEADER, 0);
+    out.set(body, HEADER.length);
+
+    const context = new LazyInterceptContext('wss://gateway.facebook.com/ws/lightspeed', out);
+    expect(rule.evaluate(context)).toBeNull();
+  });
+
   it('returns mixed verdict when typing label is bundled with innocent tasks', () => {
     const rawFrame = buildArrayFrame([{ label: '3' }, { label: '145' }]);
     const context = new LazyInterceptContext('wss://gateway.facebook.com/ws/lightspeed', rawFrame);

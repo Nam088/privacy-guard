@@ -4,8 +4,9 @@
  * These are observations, not documentation.
  *
  * **21** is the one that matters for read receipts. Its payload carries `last_read_watermark_ts`,
- * a field whose name is not an inference, alongside `thread_id` and `sync_group`. Suppressing
- * 72 and 235 without it would leave the watermark going to Meta on every read.
+ * a field whose name is not an inference, alongside `thread_id` and `sync_group`.
+ * Note: Tasks 72 (in-thread banner fetch activity banners) and 235 (ctm_ad_context) are thread
+ * initialization queries, NOT read receipts; dropping them causes queue stalls and fails outbound messages.
  *
  * **3** is the typing indicator task on `/ws/lightspeed`. It arrives in the single task envelope
  * `{ label: 3, payload: { thread_key, is_typing: 1, ... } }`.
@@ -17,7 +18,7 @@
  * Instagram must not inherit any of this. Different host, no label ever observed.
  */
 export const FACEBOOK_SIGNATURES = {
-  readReceiptLabels: ['21', '72', '235'] as readonly string[],
+  readReceiptLabels: ['21'] as readonly string[],
   readReceiptPaths: ['/ws/lightspeed', '/ws/realtime'] as readonly string[],
   typingLabels: ['3'] as readonly string[],
   typingPaths: ['/ws/lightspeed', '/ws/realtime'] as readonly string[],

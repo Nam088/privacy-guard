@@ -72,11 +72,8 @@ function decide(data: unknown, labels: readonly string[] = LABELS, url = SOCKET)
 }
 
 describe('the suppressed label list', () => {
-  // Pinned, because adding 21 to the module broke no test: nothing held the list, so removing it
-  // again would be silent. 21 is the one carrying the watermark, and dropping 72 and 235 without
-  // it protects nothing at all.
-  it('is exactly the three labels observed on this account', () => {
-    expect([...LABELS].sort()).toEqual(['21', '235', '72']);
+  it('is exactly the watermark label 21', () => {
+    expect([...LABELS]).toEqual(['21']);
   });
 
   it('drops the watermark task, which arrives alone in the single envelope', () => {
@@ -98,16 +95,19 @@ describe('the suppressed label list', () => {
 });
 
 describe('deciding one frame', () => {
-  // The shape actually observed: 72 and 235 arrive in separate frames, each doubled.
   it('drops a frame whose every task is a read receipt', () => {
-    expect(decide(frame([{ label: '72' }, { label: '72' }])).action).toBe('drop');
-    expect(decide(frame([{ label: '235' }, { label: '235' }])).action).toBe('drop');
+    expect(decide(frame([{ label: '21' }, { label: '21' }])).action).toBe('drop');
+  });
+
+  it('passes tasks 72 and 235', () => {
+    expect(decide(frame([{ label: '72' }, { label: '72' }])).action).toBe('pass');
+    expect(decide(frame([{ label: '235' }, { label: '235' }])).action).toBe('pass');
   });
 
   // The rule the whole design rests on. Frames of 100 tasks exist on this socket, so a read
   // receipt sharing one with a pagination task is not hypothetical.
   it('reports a frame that mixes a read receipt with anything else, and sends it', () => {
-    const decision = decide(frame([{ label: '72' }, { label: '145' }]));
+    const decision = decide(frame([{ label: '21' }, { label: '145' }]));
 
     expect(decision.action).toBe('mixed');
     expect(decision.matchedRules).toEqual(['facebook.hideReadReceipts']);
@@ -126,7 +126,7 @@ describe('deciding one frame', () => {
   // With the feature off there are no labels to match, and nothing may be dropped whatever the
   // frame contains.
   it('drops nothing when given no labels', () => {
-    expect(decide(frame([{ label: '72' }]), []).action).toBe('pass');
+    expect(decide(frame([{ label: '21' }]), []).action).toBe('pass');
   });
 
   it('does not drop a label that merely contains a signal label', () => {
@@ -149,7 +149,7 @@ describe('deciding one frame', () => {
 });
 
 describe('the socket the signal was observed on', () => {
-  const droppable = frame([{ label: '72' }, { label: '72' }]);
+  const droppable = frame([{ label: '21' }, { label: '21' }]);
 
   it('matches the sockets the signal was observed on', () => {
     expect(decide(droppable, LABELS, `${SOCKET}?x=1`).action).toBe('drop');

@@ -28,7 +28,7 @@ export interface InstagramSignatures {
 }
 
 export const INSTAGRAM_SIGNATURES: InstagramSignatures = {
-  readReceiptLabels: ['21', '72', '235'] as readonly string[],
+  readReceiptLabels: ['21'] as readonly string[],
   readReceiptPaths: ['/ws/lightspeed', '/ws/realtime', '/ws/streamcontroller', '/chat'] as readonly string[],
   typingLabels: ['3'] as readonly string[],
   typingPaths: ['/ws/mqttbypass', '/ws/streamcontroller', '/ws/lightspeed', '/ws/realtime', '/chat'] as readonly string[],
