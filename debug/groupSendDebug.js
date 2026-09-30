@@ -15,7 +15,9 @@
  * Review the JSON before sharing it. Use only on your own account.
  *
  * Helpers: __fbDbg.status() .tamper() .tail(30) .filter('ls') .dump() .download() .copy() .stop()
- * Flags:   __fbDbg.verbose = true (live console output), __fbDbg.logAll = true (log every request)
+ * Flags:   __fbDbg.verbose = false (silence live console output, default true), __fbDbg.logAll = true (log every request)
+ * Persistence: the last 1500 entries are saved to sessionStorage every second, so after a page reload
+ *   __fbDbg.previous() returns the log from before the reload (run it after pasting the script again).
  */
 (() => {
   if (window.__fbDbg && window.__fbDbg.installed) {
@@ -49,9 +51,22 @@
       counters[type] = (counters[type] || 0) + 1;
       log.push({ t: Date.now(), type, data });
       if (log.length > MAX_LOG) log.shift();
-      if (api.verbose) console.log('[dbg]', type, data);
+      if (api.verbose) console.log('[dbg] ' + type, pretty(type, data));
     });
   };
+
+  const pretty = (type, d) => {
+    if (type === 'ls') {
+      const labels = (d.tasks || []).map((t) => t.label).join(',');
+      return d.dir + ' req=' + d.requestId + ' labels=[' + labels + '] ' + d.bytes + 'B' + (d.rttMs != null ? ' rtt=' + d.rttMs + 'ms' : '') + (d.unparsed ? ' UNPARSED' : '');
+    }
+    return String(safe(() => JSON.stringify(d))).slice(0, 300);
+  };
+
+  const STORE_KEY = '__fbDbgLog';
+  const persist = () =>
+    safe(() => sessionStorage.setItem(STORE_KEY, JSON.stringify(log.slice(Math.max(0, log.length - 1500)))));
+  const prior = safe(() => JSON.parse(sessionStorage.getItem(STORE_KEY) || '[]')) || [];
 
   const redact = (s) => {
     if (typeof s !== 'string') return s;
@@ -491,6 +506,7 @@
     () =>
       safe(() => {
         const nowTs = Date.now();
+        persist();
         lsReq.forEach((v, rid) => {
           if (!v.flagged && nowTs - v.t > 8000) {
             v.flagged = true;
@@ -541,8 +557,9 @@
 
   const api = {
     installed: true,
-    verbose: false,
+    verbose: true,
     logAll: false,
+    previous: () => prior,
     status() {
       const s = snapshot();
       console.table(s.sockets);
