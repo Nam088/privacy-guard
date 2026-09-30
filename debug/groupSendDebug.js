@@ -459,6 +459,10 @@
       push('js:error', {
         msg: redact(String(e.message)),
         src: cleanUrl(e.filename || ''),
+        target:
+          e.target && e.target !== window
+            ? { tag: e.target.tagName, src: cleanUrl(e.target.src || e.target.href || '') }
+            : undefined,
         line: e.lineno,
         col: e.colno,
         stack: redact(String((e.error && e.error.stack) || '').slice(0, 500)),
