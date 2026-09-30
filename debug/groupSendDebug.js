@@ -16,8 +16,12 @@
  *
  * Helpers: __fbDbg.status() .tamper() .tail(30) .filter('ls') .dump() .download() .copy() .stop()
  * Flags:   __fbDbg.verbose = false (silence live console output, default true), __fbDbg.logAll = true (log every request)
- * Persistence: the last 1500 entries are saved to sessionStorage every second, so after a page reload
- *   __fbDbg.previous() returns the log from before the reload (run it after pasting the script again).
+ * Persistence is OFF by default. Facebook uploads the names of sessionStorage keys (ajax/webstorage/process_keys),
+ *   so a saved log would expose a debug key name to the server. Set __fbDbg.persist = true only if you accept that;
+ *   the last 1500 entries are then saved every second and __fbDbg.previous() returns them after a reload.
+ *   Prefer __fbDbg.download() before reloading.
+ * frames() lists iframes, useful because Messenger may open its socket inside a hidden frame. Switch the
+ *   Console context dropdown (top) to that frame and paste the script there too.
  */
 (() => {
   if (window.__fbDbg && window.__fbDbg.installed) {
@@ -65,8 +69,10 @@
 
   const STORE_KEY = '__fbDbgLog';
   const persist = () =>
+    api.persist &&
     safe(() => sessionStorage.setItem(STORE_KEY, JSON.stringify(log.slice(Math.max(0, log.length - 1500)))));
   const prior = safe(() => JSON.parse(sessionStorage.getItem(STORE_KEY) || '[]')) || [];
+  safe(() => sessionStorage.removeItem(STORE_KEY));
 
   const redact = (s) => {
     if (typeof s !== 'string') return s;
@@ -559,7 +565,16 @@
     installed: true,
     verbose: true,
     logAll: false,
+    persist: false,
     previous: () => prior,
+    frames() {
+      const list = Array.from(document.querySelectorAll('iframe')).map((f) => ({
+        src: cleanUrl(f.src || f.getAttribute('src') || ''),
+        hidden: f.offsetParent === null,
+      }));
+      console.table(list);
+      return list;
+    },
     status() {
       const s = snapshot();
       console.table(s.sockets);
@@ -602,6 +617,7 @@
       console.warn = originals.consolewarn;
       listeners.forEach(([t, n, h, o]) => t.removeEventListener(n, h, o));
       clearInterval(watcher);
+      safe(() => sessionStorage.removeItem(STORE_KEY));
       api.installed = false;
       console.log('[dbg] stopped and originals restored');
     },
