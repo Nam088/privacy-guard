@@ -358,6 +358,7 @@
       innerKeys: Object.keys(inner).slice(0, 10),
       tasks: tasks.map((t) => ({
         label: t.label,
+        taskId: t.task_id,
         queue: String(safe(() => JSON.stringify(t.queue_name))).slice(0, 60),
         fields: fieldNames(t.payload),
       })),
@@ -374,6 +375,11 @@
       return;
     }
     const text = typeof info.raw === 'string' ? info.raw : td.decode(info.raw);
+    if (typeof info.raw !== 'string') {
+      rec.hdrHex = Array.from(info.raw.subarray(0, 14))
+        .map((b) => (b < 16 ? '0' : '') + b.toString(16))
+        .join(' ');
+    }
     const j = extractJson(text);
     if (j) {
       rec.requestId = j.request_id;
