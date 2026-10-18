@@ -76,16 +76,20 @@ describe('the suppressed label list', () => {
     expect([...LABELS]).toEqual(['21']);
   });
 
-  it('drops the watermark task, which arrives alone in the single envelope', () => {
-    expect(decide(singleFrame('21', WATERMARK)).action).toBe('drop');
+  it('neutralizes the watermark task, which arrives alone in the single envelope', () => {
+    expect(decide(singleFrame('21', WATERMARK)).action).toBe('modify');
   });
 
-  // The point of dropping it: the timestamp never reaches the socket.
-  it('withholds a frame that would otherwise carry last_read_watermark_ts', () => {
+  // The point of neutralizing it: the timestamp is zeroed out while preserving DGW stream continuity.
+  it('neutralizes a frame that would otherwise carry last_read_watermark_ts', () => {
     const frameBytes = singleFrame('21', WATERMARK);
 
     expect(new TextDecoder().decode(frameBytes)).toContain('last_read_watermark_ts');
-    expect(decide(frameBytes).action).toBe('drop');
+    const decision = decide(frameBytes);
+    expect(decision.action).toBe('modify');
+    expect(new TextDecoder().decode(decision.modifiedData as Uint8Array)).toMatch(
+      /last_read_watermark_ts[\\"]*:\s*0/,
+    );
   });
 
   it('leaves a single envelope task that is not on the list alone', () => {

@@ -5,6 +5,7 @@ export interface EngineDecision {
   readonly action: VerdictAction;
   readonly reason?: string;
   readonly matchedRules?: readonly string[];
+  readonly modifiedData?: unknown;
 }
 
 /**
@@ -70,6 +71,14 @@ export class RuleEngine {
         matchedRules.push(rule.id);
         if (verdict.action === 'drop') {
           return { action: 'drop', reason: verdict.reason ?? 'suppressed', matchedRules };
+        }
+        if (verdict.action === 'modify') {
+          return {
+            action: 'modify',
+            reason: verdict.reason ?? 'modified',
+            matchedRules,
+            modifiedData: verdict.modifiedData,
+          };
         }
         if (verdict.action === 'mixed') {
           hasMixed = true;

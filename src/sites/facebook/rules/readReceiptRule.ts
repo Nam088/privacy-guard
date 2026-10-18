@@ -12,6 +12,7 @@ import {
   parseGraphQLUrl,
 } from './graphqlRequest';
 import { collectWorkerActions, isOutboundMessagePayload } from '@/sites/workerUtil';
+import { neutralizeReadReceiptDgw } from '@/protocol/dgw';
 
 const READ_RECEIPT_MUTATION_PATTERN =
   /readreceipt|mark.*thread.*read|mercurythreadmarkread|threadmarkread|readwatermark|watermark.*mutation|mark.*as.*read/i;
@@ -70,6 +71,17 @@ export class FacebookReadReceiptRule implements SuppressionRule, HttpSuppression
             text.includes('"read_receipt"') ||
             (text.includes('"watermark_ts"') && !text.includes('"message"'))
           ) {
+            // Never drop frames on /ws/realtime to avoid breaking DGW stream sequencing
+            const neutralized = neutralizeReadReceiptDgw(context.rawData);
+            if (neutralized) {
+              return {
+                action: 'modify',
+                ruleId: this.id,
+                reason: 'neutralized-realtime-read-receipt',
+                metadata: { channel: 'ws.realtime' },
+                modifiedData: neutralized,
+              };
+            }
             return {
               action: 'drop',
               ruleId: this.id,
@@ -81,6 +93,7 @@ export class FacebookReadReceiptRule implements SuppressionRule, HttpSuppression
           // fall through to DGW tasks
         }
       }
+      // fall through to DGW tasks if not matched by realtime string inspection
     }
 
     const { envelope, labels } = context.getDgwTasks();
@@ -91,6 +104,20 @@ export class FacebookReadReceiptRule implements SuppressionRule, HttpSuppression
     const signal = labels.filter((label) => this.signalLabels.includes(label));
     if (signal.length === 0) {
       return null;
+    }
+
+    // In-place neutralization: sets last_read_watermark_ts to 0 (padded with spaces).
+    // Preserves exact byte length, headers, and DGW stream continuity so subsequent
+    // messages (task 46) are never stalled for 30s.
+    const neutralized = neutralizeReadReceiptDgw(context.rawData);
+    if (neutralized) {
+      return {
+        action: 'modify',
+        ruleId: this.id,
+        reason: 'neutralized-read-receipt',
+        metadata: { labels, signal },
+        modifiedData: neutralized,
+      };
     }
 
     if (signal.length !== labels.length) {

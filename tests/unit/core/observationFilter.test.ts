@@ -21,8 +21,9 @@ describe('isRedundantObservation', () => {
     expect(isRedundantObservation(makeEvent('worker.suppressed'))).toBe(false);
   });
 
-  it('never considers mixed frames redundant', () => {
+  it('never considers mixed frames or synthetic acks redundant', () => {
     expect(isRedundantObservation(makeEvent('websocket.mixed'))).toBe(false);
+    expect(isRedundantObservation(makeEvent('websocket.synthetic_ack'))).toBe(false);
   });
 
   it('filters out noisy port.postMessage lacking chat keywords', () => {

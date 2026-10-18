@@ -184,4 +184,70 @@ describe('observeWebSocket, intercepting', () => {
     expect(sent).toEqual(['frame']);
     undo();
   });
+
+  it('dispatches synthetic ACK to socket when a dropped lightspeed frame has request_id', async () => {
+    const sent: unknown[] = [];
+    class FakeEventSocket extends EventTarget {
+      url = 'wss://gateway.messenger.com/ws/lightspeed';
+      onmessage: ((ev: MessageEvent) => void) | null = null;
+      readyState = 1;
+      send(data: unknown): void {
+        sent.push(data);
+      }
+    }
+
+    const observed: ObservedEvent[] = [];
+    const scope = { WebSocket: FakeEventSocket as unknown as typeof WebSocket };
+    const undo = observeWebSocket(scope, (ev) => observed.push(ev), undefined, () => 'drop');
+    const socket = new scope.WebSocket('wss://gateway.messenger.com/ws/lightspeed') as unknown as FakeEventSocket;
+
+    const receivedEvents: MessageEvent[] = [];
+    socket.addEventListener('message', (ev) => {
+      receivedEvents.push(ev as MessageEvent);
+    });
+
+    const payload = JSON.stringify({
+      app_id: '123',
+      request_id: 888,
+      type: 3,
+      payload: '{"tasks":[{"label":"21"}]}',
+    });
+
+    socket.send(payload);
+
+    expect(sent).toEqual([]);
+
+    // Wait for the synthetic ACK setTimeout (10ms)
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(receivedEvents.length).toBe(1);
+    const firstEvent = receivedEvents[0]!;
+    const ack = JSON.parse(firstEvent.data as string);
+    expect(ack.request_id).toBe(888);
+    expect(ack.success).toBe(true);
+
+    const syntheticObs = observed.find((e) => e.kind === 'websocket.synthetic_ack');
+    expect(syntheticObs).toBeDefined();
+    expect(syntheticObs?.target).toBe('wss://gateway.messenger.com/ws/lightspeed');
+
+    undo();
+  });
+
+  it('sends modifiedData and reports websocket.suppressed when interceptor returns modify', () => {
+    const { scope, sent } = scopeWithSpy();
+    const observed: ObservedEvent[] = [];
+    const undo = observeWebSocket(
+      scope,
+      (ev) => observed.push(ev),
+      undefined,
+      () => ({ action: 'modify', modifiedData: 'neutralized-payload' }),
+    );
+    const socket = new scope.WebSocket!('wss://gateway.messenger.com/ws/lightspeed');
+    socket.send('original-payload');
+
+    expect(sent).toEqual(['neutralized-payload']);
+    const suppressed = observed.find((e) => e.kind === 'websocket.suppressed');
+    expect(suppressed).toBeDefined();
+    undo();
+  });
 });

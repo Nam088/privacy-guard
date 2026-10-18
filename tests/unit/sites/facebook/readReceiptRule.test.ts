@@ -74,14 +74,14 @@ describe('FacebookReadReceiptRule', () => {
     ).toBeNull();
   });
 
-  it('drops /ws/realtime text frames carrying last_read_watermark_ts', () => {
+  it('neutralizes /ws/realtime text frames carrying last_read_watermark_ts', () => {
     const payload = new TextEncoder().encode('{"event":"last_read_watermark_ts","thread_id":"123"}');
     const context = new LazyInterceptContext('wss://gateway.facebook.com/ws/realtime?appid=1', payload);
 
-    expect(rule.evaluate(context)).toEqual({
-      action: 'drop',
+    expect(rule.evaluate(context)).toMatchObject({
+      action: 'modify',
       ruleId: 'facebook.hideReadReceipts',
-      reason: 'realtime-read-receipt',
+      reason: 'neutralized-realtime-read-receipt',
       metadata: { channel: 'ws.realtime' },
     });
   });

@@ -4,6 +4,8 @@ import { extractTasks, type FrameTasks } from './taskExtractor';
 export * from './frameDecoder';
 export * from './frameEncoder';
 export * from './taskExtractor';
+export * from './syntheticAck';
+export * from './dgwNeutralizer';
 
 /** Decodes a frame and extracts its tasks in one step. */
 export function readFrame(bytes: Uint8Array): FrameTasks {
