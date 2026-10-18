@@ -34,15 +34,15 @@ describe('FacebookInboxWatermarkRule', () => {
     expect(rule.targetPaths).toContain('/ws/realtime');
   });
 
-  it('drops the watermark that says when the inbox was opened', () => {
+  it('neutralizes the watermark that says when the inbox was opened', () => {
     const raw = buildFrame([
       { label: '6', payload: { parent_thread_key: 0, last_seen_time_ms: 1788633948465 } },
     ]);
 
     expect(rule.evaluate(new LazyInterceptContext(LIGHTSPEED, raw))).toMatchObject({
-      action: 'drop',
+      action: 'modify',
       ruleId: 'facebook.hideInboxLastSeen',
-      reason: 'inbox-root-watermark',
+      reason: 'neutralized-inbox-watermark',
     });
   });
 

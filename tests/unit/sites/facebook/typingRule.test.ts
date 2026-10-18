@@ -74,25 +74,20 @@ describe('FacebookTypingRule', () => {
     );
     const verdict = rule.evaluate(context);
 
-    expect(verdict).toEqual({
-      action: 'drop',
-      ruleId: 'facebook.hideTyping',
-      reason: 'realtime-typing-indicator',
-      metadata: { channel: 'ws.realtime' },
-    });
+    expect(verdict?.action).toBe('modify');
+    expect(verdict?.ruleId).toBe('facebook.hideTyping');
+    expect(verdict?.modifiedData).toBeDefined();
   });
 
-  it('drops websocket frames carrying only typing label 3 in single envelope', () => {
+  it('neutralizes websocket frames carrying only typing label 3 in single envelope', () => {
     const rawFrame = buildSingleFrame(3);
     const context = new LazyInterceptContext('wss://gateway.facebook.com/ws/lightspeed', rawFrame);
     const verdict = rule.evaluate(context);
 
-    expect(verdict).toEqual({
-      action: 'drop',
-      ruleId: 'facebook.hideTyping',
-      reason: 'all-typing-indicator',
-      metadata: { labels: ['3'], signal: ['3'] },
-    });
+    expect(verdict?.action).toBe('modify');
+    expect(verdict?.ruleId).toBe('facebook.hideTyping');
+    expect(verdict?.reason).toBe('neutralized-typing-indicator');
+    expect(verdict?.modifiedData).toBeDefined();
   });
 
   it('passes DGW frame carrying typing label 3 when is_typing is 0 (stop signal)', () => {
@@ -311,7 +306,7 @@ describe('FacebookTypingRule', () => {
       const bytes = new TextEncoder().encode(payload);
       const context = new LazyInterceptContext('wss://gateway.messenger.com/ws/realtime', bytes);
       const verdict = rule.evaluate(context);
-      expect(verdict?.action).toBe('drop');
+      expect(verdict?.action).toBe('modify');
     });
 
     it('passes /ws/realtime frames carrying sendChatStateFromComposer stop signals', () => {

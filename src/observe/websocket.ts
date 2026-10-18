@@ -5,6 +5,7 @@ import {
   type Report,
 } from './types';
 import { readReplayManager } from './replayBuffer';
+import { createSyntheticDgwAck } from '@/protocol/dgw';
 
 interface SocketScope {
   WebSocket?: typeof WebSocket;
@@ -13,7 +14,7 @@ interface SocketScope {
 /**
  * What to do with one outbound frame. Returning `drop` withholds it from the socket.
  */
-export type SendVerdict = 'pass' | 'drop' | 'mixed';
+export type SendVerdict = 'pass' | 'drop' | 'mixed' | 'modify';
 
 export interface SendDecision {
   readonly action: SendVerdict;
@@ -101,7 +102,7 @@ export function observeWebSocket(
 
     safely(() => {
       const kind =
-        verdict === 'drop'
+        verdict === 'drop' || verdict === 'modify'
           ? 'websocket.suppressed'
           : verdict === 'mixed'
             ? 'websocket.mixed'
@@ -111,12 +112,58 @@ export function observeWebSocket(
       return event;
     }, dataToSend);
 
+    if (verdict === 'modify') {
+      if (
+        typeof this.url === 'string' &&
+        (this.url.includes('/ws/lightspeed') || this.url.includes('/ws/realtime'))
+      ) {
+        readReplayManager.cacheSuppressedReceipt(this.url, data);
+      }
+    }
+
     if (verdict === 'drop') {
       if (
         typeof this.url === 'string' &&
         (this.url.includes('/ws/lightspeed') || this.url.includes('/ws/realtime'))
       ) {
         readReplayManager.cacheSuppressedReceipt(this.url, data);
+
+        // Synthetic ACK: Release client-side sequential task queue immediately
+        // to prevent 30s ESTABLISHMENT_TIMEOUT from stalling outbound messages.
+        const synthetic = createSyntheticDgwAck(data);
+        if (synthetic) {
+          setTimeout(() => {
+            try {
+              if (this.readyState === 2 || this.readyState === 3) {
+                return;
+              }
+              const origin = typeof this.url === 'string' ? this.url : '';
+              const event = new MessageEvent('message', {
+                data: synthetic.ackData,
+                origin,
+              });
+              let handled = false;
+              if (typeof this.dispatchEvent === 'function') {
+                try {
+                  this.dispatchEvent(event);
+                  handled = true;
+                } catch {
+                  handled = false;
+                }
+              }
+              if (!handled && typeof this.onmessage === 'function') {
+                this.onmessage.call(this, event);
+              }
+              safely(() => {
+                const obsEvent = newEvent('websocket.synthetic_ack', this.url || '', frameUrl);
+                obsEvent.value = describeValue(synthetic.ackData);
+                return obsEvent;
+              }, synthetic.ackData);
+            } catch {
+              // Fail-safe
+            }
+          }, 10);
+        }
       }
       return;
     }

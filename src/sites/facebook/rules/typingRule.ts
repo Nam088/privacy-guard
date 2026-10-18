@@ -18,6 +18,7 @@ import {
   isOutboundMessagePayload,
   isTypingStopPayload,
 } from '@/sites/workerUtil';
+import { neutralizeRealtimeTelemetry, neutralizeTypingDgw } from '@/protocol/dgw';
 
 /**
  * Matches operation names not on the signature list.
@@ -85,13 +86,25 @@ export class FacebookTypingRule implements SuppressionRule, HttpSuppressionRule 
             text.includes('chatstate') ||
             text.includes('chat_state')
           ) {
-            // Preserve stop states (e.g. idle, pause, stop, is_typing: 0) so recipient is never stuck with 3 dots
+            // Preserve stop states (e.g. idle, pause, stop, is_typing: 0, state: 0) so recipient is never stuck with 3 dots
             const isStop =
               /["\\](?:idle|pause|stop|inactive|clear|gone)["\\]|"state":\s*0|"state":\s*2|"is_typing":\s*0|"chat_state":\s*0/i.test(
                 text,
               );
             if (isStop) {
               return null;
+            }
+
+            // Never drop frames on /ws/realtime to avoid breaking DGW stream sequencing
+            const neutralized = neutralizeRealtimeTelemetry(context.rawData);
+            if (neutralized) {
+              return {
+                action: 'modify',
+                ruleId: this.id,
+                reason: 'neutralized-realtime-typing-telemetry',
+                metadata: { channel: 'ws.realtime' },
+                modifiedData: neutralized,
+              };
             }
             return {
               action: 'drop',
@@ -117,12 +130,26 @@ export class FacebookTypingRule implements SuppressionRule, HttpSuppressionRule 
       return null;
     }
 
-    // Never drop typing stop/idle signals (e.g. is_typing: 0) on DGW frames
+    // Never mutate or drop typing stop/idle signals (e.g. is_typing: 0) on DGW frames
     const hasStopSignal = tasks.some(
       (task) => this.signalLabels.includes(task.label) && isTypingStopPayload(task.payload),
     );
     if (hasStopSignal) {
       return null;
+    }
+
+    // In-place neutralization: sets is_typing: 1 -> is_typing: 0
+    // Preserves exact byte length, headers, and DGW stream continuity so subsequent
+    // messages (task 46) are never stalled for 30s.
+    const neutralized = neutralizeTypingDgw(context.rawData);
+    if (neutralized) {
+      return {
+        action: 'modify',
+        ruleId: this.id,
+        reason: 'neutralized-typing-indicator',
+        metadata: { labels, signal },
+        modifiedData: neutralized,
+      };
     }
 
     if (signal.length !== labels.length) {

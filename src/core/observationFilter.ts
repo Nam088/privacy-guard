@@ -24,7 +24,7 @@ export function isRedundantObservation(event: ObservedEvent, raw?: unknown): boo
   const kind = event.kind;
 
   // 1. Any suppressed action or mixed frame is privacy-critical and must ALWAYS be reported.
-  if (kind.endsWith('.suppressed') || kind === 'websocket.mixed') {
+  if (kind.endsWith('.suppressed') || kind === 'websocket.mixed' || kind === 'websocket.synthetic_ack') {
     return false;
   }
 

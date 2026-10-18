@@ -21,7 +21,6 @@ import {
   InstagramTypingRule,
 } from '@/sites/instagram/rules';
 import { transformStreamControllerPresence } from '@/observe/stealthPresence';
-import { isDwellTelemetryData } from '@/observe/telemetry';
 import {
   attachLinkShimBypass,
   isLinkShimUrl,
@@ -210,29 +209,39 @@ export default defineUnlistedScript(() => {
   function intercept(url: string, data: unknown): SendVerdict | SendDecision {
     if (onlineStatusHidden && url.includes('/ws/streamcontroller')) {
       const modified = transformStreamControllerPresence(url, data);
-      return { action: 'pass', modifiedData: modified };
-    }
-    if (dwellTimeScrambled && url.includes('/ws/realtime') && isDwellTelemetryData(data)) {
-      return 'drop';
+      return { action: 'modify', modifiedData: modified };
     }
 
     if (isInstagramSite) {
       const context = new LazyInterceptContext(url, data);
       if (readReceiptsActive) {
         const readVerdict = igReadReceiptRule.evaluate(context);
-        if (readVerdict && readVerdict.action === 'drop') {
-          return 'drop';
+        if (readVerdict) {
+          if (readVerdict.action === 'modify') {
+            return { action: 'modify', modifiedData: readVerdict.modifiedData };
+          }
+          if (readVerdict.action === 'drop') {
+            return 'drop';
+          }
         }
       }
       if (typingActive) {
         const typingVerdict = igTypingRule.evaluate(context);
-        if (typingVerdict && typingVerdict.action === 'drop') {
-          return 'drop';
+        if (typingVerdict) {
+          if (typingVerdict.action === 'modify') {
+            return { action: 'modify', modifiedData: typingVerdict.modifiedData };
+          }
+          if (typingVerdict.action === 'drop') {
+            return 'drop';
+          }
         }
       }
     }
 
     const decision = engine.intercept(url, data);
+    if (decision.action === 'modify') {
+      return { action: 'modify', modifiedData: decision.modifiedData };
+    }
     return decision.action;
   }
 

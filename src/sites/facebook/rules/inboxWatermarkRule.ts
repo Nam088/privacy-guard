@@ -1,5 +1,6 @@
 import type { InterceptContext, RuleVerdict, SuppressionRule } from '@/engine';
 import { FACEBOOK_SIGNATURES } from '../signatures';
+import { neutralizeInboxWatermarkDgw } from '@/protocol/dgw';
 
 /** The root folder. Any other value is a folder inside the inbox, which this rule leaves alone. */
 const ROOT_FOLDER = 0;
@@ -50,6 +51,17 @@ export class FacebookInboxWatermarkRule implements SuppressionRule {
     }
 
     const labels = tasks.map((entry) => entry.label);
+
+    const neutralized = neutralizeInboxWatermarkDgw(context.rawData);
+    if (neutralized) {
+      return {
+        action: 'modify',
+        ruleId: this.id,
+        reason: 'neutralized-inbox-watermark',
+        metadata: { labels, signal: signal.map((entry) => entry.label) },
+        modifiedData: neutralized,
+      };
+    }
 
     if (signal.length !== tasks.length) {
       return {

@@ -3,6 +3,8 @@ export type ObservedKind =
   | 'websocket.send'
   /** A frame was dropped: every task in it was one this build suppresses. */
   | 'websocket.suppressed'
+  /** A synthetic ACK was generated and dispatched to prevent queue stalls. */
+  | 'websocket.synthetic_ack'
   /**
    * A frame carrying a suppressed task was let through because it also carried something else.
    * This is a leak, and it is reported rather than hidden: a suppressor that silently fails open

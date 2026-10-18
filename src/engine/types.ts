@@ -4,13 +4,14 @@
  * Implements Strategy, Virtual Proxy (Lazy Context), and Chain of Responsibility patterns.
  */
 
-export type VerdictAction = 'pass' | 'drop' | 'mixed';
+export type VerdictAction = 'pass' | 'drop' | 'mixed' | 'modify';
 
 export interface RuleVerdict {
   readonly action: VerdictAction;
   readonly ruleId: string;
   readonly reason?: string;
   readonly metadata?: Record<string, unknown>;
+  readonly modifiedData?: unknown;
 }
 
 /**
